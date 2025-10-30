@@ -491,10 +491,33 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-md">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div
+              className={`flex items-center gap-4 ${!isFormExpanded ? 'cursor-pointer' : ''}`}
+              onClick={() => {
+                if (!isFormExpanded) {
+                  setIsFormExpanded(true)
+                  // Disable auto-minimize temporarily to prevent immediate collapse
+                  setAllowAutoMinimize(false)
+                  setTimeout(() => {
+                    setAllowAutoMinimize(true)
+                  }, 500)
+                }
+              }}
+            >
               <button
                 type="button"
-                onClick={() => setIsFormExpanded(!isFormExpanded)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const newExpandedState = !isFormExpanded
+                  setIsFormExpanded(newExpandedState)
+                  // If expanding, disable auto-minimize temporarily
+                  if (newExpandedState) {
+                    setAllowAutoMinimize(false)
+                    setTimeout(() => {
+                      setAllowAutoMinimize(true)
+                    }, 500)
+                  }
+                }}
                 className={`p-2 rounded-lg transition-all ${
                   !isFormExpanded && isEditing
                     ? 'animate-pulse bg-blue-100 hover:bg-blue-200 shadow-lg shadow-blue-300 ring-2 ring-blue-400'
