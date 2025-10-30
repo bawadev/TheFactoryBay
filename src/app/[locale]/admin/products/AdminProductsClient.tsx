@@ -15,8 +15,12 @@ import {
   removeVariantImageAction,
 } from '@/app/actions/admin-products'
 import { uploadMultipleImages, deleteImage } from '@/app/actions/upload'
+import {
+  getAllPromotionalCategoriesAction,
+  addProductToCategoryAction,
+} from '@/app/actions/promotional-categories'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
-import type { ProductCategory, ProductGender, Product } from '@/lib/types'
+import type { ProductCategory, ProductGender, Product, PromotionalCategory } from '@/lib/types'
 
 interface AdminProductsClientProps {
   products: ProductWithVariants[]
@@ -81,6 +85,14 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   // Sorting state
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'price' | 'variants' | 'stock'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+
+  // Section assignment state
+  const [showSectionDialog, setShowSectionDialog] = useState(false)
+  const [selectedProductForSection, setSelectedProductForSection] = useState<ProductWithVariants | null>(null)
+  const [promotionalCategories, setPromotionalCategories] = useState<PromotionalCategory[]>([])
+  const [sectionQuantities, setSectionQuantities] = useState<Record<string, number>>({})
+  const [assigningSections, setAssigningSections] = useState(false)
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
 
   const nameInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
@@ -237,6 +249,54 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     }
 
     setDeletingId(null)
+  }
+
+  const handleOpenSectionDialog = async (product: ProductWithVariants) => {
+    setSelectedProductForSection(product)
+    setOpenDropdownId(null)
+
+    // Load promotional categories
+    const result = await getAllPromotionalCategoriesAction(false)
+    if (result.success && result.data) {
+      setPromotionalCategories(result.data)
+    }
+
+    setShowSectionDialog(true)
+  }
+
+  const handleAssignToSections = async () => {
+    if (!selectedProductForSection) return
+
+    const selectedSections = Object.entries(sectionQuantities).filter(([_, qty]) => qty > 0)
+    if (selectedSections.length === 0) {
+      alert('Please enter at least one quantity')
+      return
+    }
+
+    const totalStock = selectedProductForSection.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
+    const totalAllocated = selectedSections.reduce((sum, [_, qty]) => sum + qty, 0)
+
+    if (totalAllocated > totalStock) {
+      alert(`Total allocated (${totalAllocated}) cannot exceed available stock (${totalStock})`)
+      return
+    }
+
+    setAssigningSections(true)
+
+    // Assign to each selected section
+    for (const [categoryId, quantity] of selectedSections) {
+      const result = await addProductToCategoryAction(categoryId, selectedProductForSection.id, quantity)
+      if (!result.success) {
+        alert(`Failed to add to section: ${result.message}`)
+      }
+    }
+
+    setAssigningSections(false)
+    setShowSectionDialog(false)
+    setSectionQuantities({})
+    setSelectedProductForSection(null)
+
+    alert('Product assigned to sections successfully!')
   }
 
   const loadProductIntoForm = (product: ProductWithVariants) => {
@@ -487,6 +547,24 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-navy-900">Product Management</h1>
+            <Link
+              href={`/${locale}/admin/dashboard`}
+              className="text-sm text-navy-600 hover:text-navy-700 font-medium flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Sticky Form Section */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-md">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
@@ -1129,6 +1207,36 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </Link>
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOpenDropdownId(openDropdownId === product.id ? null : product.id)
+                              }}
+                              className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-100 rounded"
+                              title="More options"
+                            >
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                              </svg>
+                            </button>
+                            {openDropdownId === product.id && (
+                              <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleOpenSectionDialog(product)
+                                  }}
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-t-lg"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                  </svg>
+                                  Add to Sections
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -1190,6 +1298,143 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
               height={1200}
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Section Assignment Dialog */}
+      {showSectionDialog && selectedProductForSection && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Dialog Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Add to Homepage Sections</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Assign "{selectedProductForSection.name}" to promotional sections
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSectionDialog(false)
+                  setSectionQuantities({})
+                  setSelectedProductForSection(null)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Product Info */}
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                <div className="relative w-20 h-20 bg-gray-100 rounded flex-shrink-0">
+                  {selectedProductForSection.variants[0]?.images[0] && (
+                    <Image
+                      src={selectedProductForSection.variants[0].images[0]}
+                      alt={selectedProductForSection.name}
+                      fill
+                      className="object-cover rounded"
+                      sizes="80px"
+                    />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{selectedProductForSection.name}</h3>
+                  <p className="text-sm text-gray-600">{selectedProductForSection.brand}</p>
+                  <p className="text-sm font-medium text-green-600 mt-1">
+                    Total Stock: {selectedProductForSection.variants.reduce((sum, v) => sum + v.stockQuantity, 0)} units
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section List */}
+            <div className="px-6 py-4">
+              <h3 className="font-semibold text-gray-900 mb-4">Select Sections and Quantities</h3>
+              {promotionalCategories.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No promotional sections available</p>
+              ) : (
+                <div className="space-y-3">
+                  {promotionalCategories.map((category) => (
+                    <div
+                      key={category.id}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-900">{category.name}</h4>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              category.isActive
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {category.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        {category.description && (
+                          <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={sectionQuantities[category.id] || ''}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0
+                          setSectionQuantities({
+                            ...sectionQuantities,
+                            [category.id]: value,
+                          })
+                        }}
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none ml-4"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Total Allocated Warning */}
+              {Object.values(sectionQuantities).some((qty) => qty > 0) && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Total to allocate:</strong>{' '}
+                    {Object.values(sectionQuantities).reduce((sum, qty) => sum + qty, 0)} units
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Available stock: {selectedProductForSection.variants.reduce((sum, v) => sum + v.stockQuantity, 0)}{' '}
+                    units
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Dialog Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowSectionDialog(false)
+                  setSectionQuantities({})
+                  setSelectedProductForSection(null)
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignToSections}
+                disabled={assigningSections || Object.values(sectionQuantities).every((qty) => !qty || qty === 0)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {assigningSections ? 'Assigning...' : 'Assign to Sections'}
+              </button>
+            </div>
           </div>
         </div>
       )}

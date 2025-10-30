@@ -155,3 +155,26 @@ export interface ProductView {
   productId: string
   viewedAt: string
 }
+
+// Promotional categories
+export interface PromotionalCategory {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  displayOrder: number
+  isActive: boolean
+  startDate?: string
+  endDate?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PromotionalCategoryItem {
+  id: string
+  categoryId: string
+  productId: string
+  allocatedQuantity: number
+  soldQuantity: number
+  addedAt: string
+}

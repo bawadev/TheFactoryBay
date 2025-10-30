@@ -134,6 +134,40 @@ export default async function AdminDashboardPage() {
               </svg>
             </div>
           </Link>
+
+          {/* Promotional Categories Card */}
+          <Link
+            href={`/${locale}/admin/promotional-categories`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-600 group-hover:bg-purple-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Homepage Sections</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              Manage promotional categories like Best Sellers, Christmas Sale, and featured sections on homepage.
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-purple-600 group-hover:text-purple-700">
+              Manage Sections
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
         </div>
 
         {/* Quick Stats */}

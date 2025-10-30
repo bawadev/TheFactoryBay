@@ -134,6 +134,40 @@ export default async function AdminDashboardPage() {
               </svg>
             </div>
           </Link>
+
+          {/* Promotional Categories Card */}
+          <Link
+            href={`/${locale}/admin/promotional-categories`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-600 group-hover:bg-purple-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Promotions</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              Create and manage promotional categories like "Best Deals", "New Arrivals", and seasonal offers.
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-purple-600 group-hover:text-purple-700">
+              Manage Promotions
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
         </div>
 
         {/* Quick Stats */}
