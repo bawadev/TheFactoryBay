@@ -71,6 +71,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   const [uploadingImages, setUploadingImages] = useState<{ [variantId: string]: boolean }>({})
   const [viewingImage, setViewingImage] = useState<string | null>(null)
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
   const fileInputRefs = useRef<{ [variantId: string]: HTMLInputElement | null }>({})
 
   // Form collapse state
@@ -567,98 +568,167 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           {isFormExpanded && (
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
 
-            {/* Image Management Section - Compact */}
+            {/* Image Management Section - Split Layout */}
             {isEditing && editingProduct && editingProduct.variants.length > 0 && (
-              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">Product Images</h3>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selectedVariantId || ''}
-                      onChange={(e) => setSelectedVariantId(e.target.value)}
-                      className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                    >
-                      {editingProduct.variants.map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.size} | {variant.color} | Stock: {variant.stockQuantity}
-                        </option>
-                      ))}
-                    </select>
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Product Images</h3>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left Side: Variant Selector + Image Gallery */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Select Variant</label>
+                      <select
+                        value={selectedVariantId || ''}
+                        onChange={(e) => setSelectedVariantId(e.target.value)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
+                      >
+                        {editingProduct.variants.map((variant) => (
+                          <option key={variant.id} value={variant.id}>
+                            Size: {variant.size} | Color: {variant.color} | Stock: {variant.stockQuantity}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Image Gallery */}
                     {selectedVariantId && (() => {
                       const selectedVariant = editingProduct.variants.find(v => v.id === selectedVariantId)
                       if (!selectedVariant) return null
 
                       return (
-                        <>
-                          <input
-                            ref={el => { fileInputRefs.current[selectedVariant.id] = el }}
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={(e) => {
-                              if (e.target.files) {
-                                handleImageUpload(selectedVariant.id, e.target.files)
-                              }
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-2">
+                            Current Images ({selectedVariant.images?.length || 0})
+                          </label>
+                          <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-2 min-h-[88px]"
+                            onWheel={(e) => {
+                              e.stopPropagation()
+                              e.currentTarget.scrollLeft += e.deltaY
                             }}
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => fileInputRefs.current[selectedVariant.id]?.click()}
-                            disabled={uploadingImages[selectedVariant.id]}
-                            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {uploadingImages[selectedVariant.id] ? 'Uploading...' : '+ Add'}
-                          </button>
-                        </>
+                            {selectedVariant.images && selectedVariant.images.length > 0 ? (
+                              selectedVariant.images.map((imageUrl, idx) => (
+                                <div key={`${selectedVariant.id}-${idx}`} className="relative flex-shrink-0 group">
+                                  <div className="h-20 w-20 rounded-lg overflow-hidden bg-white border-2 border-gray-300 hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer shadow-sm">
+                                    <Image
+                                      src={imageUrl}
+                                      alt={`${selectedVariant.size} ${selectedVariant.color}`}
+                                      width={80}
+                                      height={80}
+                                      className="w-full h-full object-cover"
+                                      onClick={() => setViewingImage(imageUrl)}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleImageRemove(selectedVariant.id, imageUrl)}
+                                    className="absolute -top-1 -right-1 p-0.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-md"
+                                    title="Remove image"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="flex items-center justify-center w-full h-20 text-xs text-gray-400 italic border-2 border-dashed border-gray-300 rounded-lg">
+                                No images yet
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )
                     })()}
                   </div>
-                </div>
 
-                {/* Image Gallery */}
-                {selectedVariantId && (() => {
-                  const selectedVariant = editingProduct.variants.find(v => v.id === selectedVariantId)
-                  if (!selectedVariant) return null
+                  {/* Right Side: Drag & Drop Upload Component */}
+                  {selectedVariantId && (() => {
+                    const selectedVariant = editingProduct.variants.find(v => v.id === selectedVariantId)
+                    if (!selectedVariant) return null
 
-                  return (
-                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-2"
-                      onWheel={(e) => {
-                        e.stopPropagation()
-                        e.currentTarget.scrollLeft += e.deltaY
-                      }}
-                    >
-                      {selectedVariant.images && selectedVariant.images.length > 0 ? (
-                        selectedVariant.images.map((imageUrl, idx) => (
-                          <div key={`${selectedVariant.id}-${idx}`} className="relative flex-shrink-0 group">
-                            <div className="h-20 w-20 rounded-lg overflow-hidden bg-white border-2 border-gray-300 hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer shadow-sm">
-                              <Image
-                                src={imageUrl}
-                                alt={`${selectedVariant.size} ${selectedVariant.color}`}
-                                width={80}
-                                height={80}
-                                className="w-full h-full object-cover"
-                                onClick={() => setViewingImage(imageUrl)}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleImageRemove(selectedVariant.id, imageUrl)}
-                              className="absolute -top-1 -right-1 p-0.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-md"
-                              title="Remove image"
-                            >
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    return (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Upload Images</label>
+                        <input
+                          ref={el => { fileInputRefs.current[selectedVariant.id] = el }}
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              handleImageUpload(selectedVariant.id, e.target.files)
+                              setIsDraggingOver(false)
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setIsDraggingOver(true)
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setIsDraggingOver(false)
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setIsDraggingOver(false)
+                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                              handleImageUpload(selectedVariant.id, e.dataTransfer.files)
+                            }
+                          }}
+                          onClick={() => !uploadingImages[selectedVariant.id] && fileInputRefs.current[selectedVariant.id]?.click()}
+                          className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 cursor-pointer transition-all ${
+                            isDraggingOver
+                              ? 'border-blue-500 bg-blue-50'
+                              : uploadingImages[selectedVariant.id]
+                              ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
+                              : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                          style={{ minHeight: '140px' }}
+                        >
+                          {uploadingImages[selectedVariant.id] ? (
+                            <>
+                              <svg className="w-10 h-10 text-blue-500 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-gray-500 italic py-2">No images for this variant</p>
-                      )}
-                    </div>
-                  )
-                })()}
+                              <p className="text-sm text-gray-600 font-medium">Uploading...</p>
+                              <p className="text-xs text-gray-500 mt-1">Please wait</p>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-10 h-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <p className="text-sm text-gray-700 font-medium mb-1">
+                                {isDraggingOver ? 'Drop images here' : 'Drag & drop images'}
+                              </p>
+                              <p className="text-xs text-gray-500 mb-2">or</p>
+                              <button
+                                type="button"
+                                className="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  fileInputRefs.current[selectedVariant.id]?.click()
+                                }}
+                              >
+                                Browse Files
+                              </button>
+                              <p className="text-xs text-gray-400 mt-3">PNG, JPG, GIF up to 10MB</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
