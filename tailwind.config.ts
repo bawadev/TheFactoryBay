@@ -59,6 +59,7 @@ const config: Config = {
         'scale-up': 'scaleUp 300ms ease-out',
         'shimmer': 'shimmer 2s infinite',
         'pulse-scale': 'pulseScale 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
       },
       keyframes: {
         slideInRight: {
@@ -76,6 +77,10 @@ const config: Config = {
         pulseScale: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.3)' },
+        },
+        pulseSoft: {
+          '0%, 100%': { backgroundColor: 'transparent' },
+          '50%': { backgroundColor: 'rgb(243 244 246)' },
         },
       },
     },

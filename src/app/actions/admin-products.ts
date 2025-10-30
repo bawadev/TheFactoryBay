@@ -10,6 +10,7 @@ import {
   addVariant,
   updateVariant,
   deleteVariant,
+  getAllBrands,
   type ProductWithVariants,
 } from '@/lib/repositories/product.repository'
 import type { ActionResponse } from './types'
@@ -208,6 +209,198 @@ export async function updateVariantAction(
     return {
       success: false,
       message: 'Failed to update variant',
+    }
+  }
+}
+
+/**
+ * Search products by name (for autocomplete)
+ */
+export async function searchProductsByNameAction(
+  searchTerm: string
+): Promise<ActionResponse<{ products: ProductWithVariants[] }>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    const products = await getAllProducts({ search: searchTerm }, 10)
+
+    return {
+      success: true,
+      data: { products },
+    }
+  } catch (error) {
+    console.error('Search products error:', error)
+    return {
+      success: false,
+      message: 'Failed to search products',
+    }
+  }
+}
+
+/**
+ * Check if a product name already exists (for duplicate checking)
+ */
+export async function checkProductNameExistsAction(
+  name: string,
+  excludeId?: string
+): Promise<ActionResponse<{ exists: boolean; product?: ProductWithVariants }>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    const products = await getAllProducts({ search: name }, 10)
+
+    // Find exact match (case-insensitive)
+    const exactMatch = products.find(
+      p => p.name.toLowerCase() === name.toLowerCase() && p.id !== excludeId
+    )
+
+    return {
+      success: true,
+      data: {
+        exists: !!exactMatch,
+        product: exactMatch,
+      },
+    }
+  } catch (error) {
+    console.error('Check product name error:', error)
+    return {
+      success: false,
+      message: 'Failed to check product name',
+    }
+  }
+}
+
+/**
+ * Get all unique brands (for autocomplete)
+ */
+export async function getAllBrandsAction(): Promise<ActionResponse<{ brands: string[] }>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    const brands = await getAllBrands()
+
+    return {
+      success: true,
+      data: { brands },
+    }
+  } catch (error) {
+    console.error('Get brands error:', error)
+    return {
+      success: false,
+      message: 'Failed to fetch brands',
+    }
+  }
+}
+
+/**
+ * Add an image to a product variant
+ */
+export async function addVariantImageAction(
+  variantId: string,
+  imageUrl: string
+): Promise<ActionResponse<null>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    // Get current variant to access existing images
+    const { getVariantById } = await import('@/lib/repositories/product.repository')
+    const variant = await getVariantById(variantId)
+
+    if (!variant) {
+      return {
+        success: false,
+        message: 'Variant not found',
+      }
+    }
+
+    // Add new image to existing images
+    const updatedImages = [...(variant.images || []), imageUrl]
+
+    await updateVariant(variantId, { images: updatedImages })
+
+    return {
+      success: true,
+      message: 'Image added successfully',
+    }
+  } catch (error) {
+    console.error('Add variant image error:', error)
+    return {
+      success: false,
+      message: 'Failed to add image',
+    }
+  }
+}
+
+/**
+ * Remove an image from a product variant
+ */
+export async function removeVariantImageAction(
+  variantId: string,
+  imageUrl: string
+): Promise<ActionResponse<null>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    // Get current variant to access existing images
+    const { getVariantById } = await import('@/lib/repositories/product.repository')
+    const variant = await getVariantById(variantId)
+
+    if (!variant) {
+      return {
+        success: false,
+        message: 'Variant not found',
+      }
+    }
+
+    // Remove image from existing images
+    const updatedImages = (variant.images || []).filter(img => img !== imageUrl)
+
+    await updateVariant(variantId, { images: updatedImages })
+
+    return {
+      success: true,
+      message: 'Image removed successfully',
+    }
+  } catch (error) {
+    console.error('Remove variant image error:', error)
+    return {
+      success: false,
+      message: 'Failed to remove image',
     }
   }
 }
