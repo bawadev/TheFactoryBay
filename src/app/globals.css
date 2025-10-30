@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-jetbrains-mono: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-950 antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl leading-tight -tracking-wider font-bold;
+  }
+
+  h2 {
+    @apply text-3xl leading-snug -tracking-wide font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl leading-normal;
+  }
+
+  h4 {
+    @apply text-xl leading-normal;
+  }
+
+  h5 {
+    @apply text-lg leading-relaxed;
+  }
+
+  h6 {
+    @apply text-base leading-relaxed;
+  }
+}
+
+@layer components {
+  /* Button Styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-md font-semibold
+           transition-all duration-200 ease-out focus:outline-none focus:ring-2
+           focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-coral-600 text-white hover:bg-coral-500 hover:scale-105
+           active:scale-95 focus:ring-coral-300;
+  }
+
+  .btn-secondary {
+    @apply btn border-2 border-navy-600 text-navy-600 bg-transparent
+           hover:bg-navy-50 hover:scale-105 active:scale-95 focus:ring-navy-300;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-700 bg-transparent hover:bg-gray-100
+           active:bg-gray-200 focus:ring-gray-300;
+  }
+
+  /* Input Styles */
+  .input {
+    @apply w-full px-4 py-3 rounded-md border border-gray-300 bg-white
+           text-gray-900 placeholder-gray-400 transition-all duration-200
+           focus:outline-none focus:border-navy-600 focus:ring-2
+           focus:ring-navy-200 disabled:bg-gray-50 disabled:cursor-not-allowed;
+  }
+
+  .input-error {
+    @apply input border-red-500 focus:border-red-500 focus:ring-red-200;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm
+           transition-all duration-300 ease-out;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Loading Skeleton */
+  .skeleton {
+    @apply bg-gray-200 animate-pulse rounded-md;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

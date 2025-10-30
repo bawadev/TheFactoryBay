@@ -1,0 +1,164 @@
+import { redirect } from 'next/navigation'
+import { isAdmin } from '@/lib/auth'
+import { getTranslations, getLocale } from 'next-intl/server'
+import Link from 'next/link'
+
+export default async function AdminDashboardPage() {
+  const adminAccess = await isAdmin()
+  const locale = await getLocale()
+
+  if (!adminAccess) {
+    redirect(`/${locale}/login?redirect=/${locale}/admin`)
+  }
+
+  const t = await getTranslations('admin.dashboard')
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-navy-900">{t('title')}</h1>
+              <p className="mt-1 text-sm text-gray-600">Manage your Factory Bay store</p>
+            </div>
+            <Link href={`/${locale}`} className="text-sm text-navy-600 hover:text-navy-700 font-medium">
+              ← Back to Store
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Dashboard Content */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Products Card */}
+          <Link
+            href={`/${locale}/admin/products`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-navy-600 group-hover:bg-navy-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Products</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              Manage your product catalog, add new products, update inventory, and more.
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-navy-600 group-hover:text-navy-700">
+              {t('manageProducts')}
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+
+          {/* Orders Card */}
+          <Link
+            href={`/${locale}/admin/orders`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-600 group-hover:bg-green-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Orders</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              View and manage customer orders, update order status, and track fulfillment.
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-green-600 group-hover:text-green-700">
+              {t('manageOrders')}
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+
+          {/* Inventory Card */}
+          <Link
+            href={`/${locale}/admin/inventory`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-600 group-hover:bg-orange-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Inventory</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              Track stock levels, view low inventory alerts, and manage product variants.
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-orange-600 group-hover:text-orange-700">
+              {t('viewInventory')}
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <p className="text-sm font-medium text-gray-600">{t('totalProducts')}</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">10</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <p className="text-sm font-medium text-gray-600">{t('pendingOrders')}</p>
+              <p className="mt-2 text-3xl font-bold text-yellow-600">-</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <p className="text-sm font-medium text-gray-600">Low Stock Items</p>
+              <p className="mt-2 text-3xl font-bold text-red-600">-</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <p className="text-sm font-medium text-gray-600">{t('totalRevenue')}</p>
+              <p className="mt-2 text-3xl font-bold text-green-600">$-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
