@@ -575,7 +575,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    className="px-4 py-2 text-sm text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg font-medium transition-colors shadow-sm"
                   >
                     Cancel
                   </button>
@@ -980,6 +980,10 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
       {/* Products Table */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Products</h2>
+          <p className="text-xs text-gray-500 italic">Tap on table headers to sort</p>
+        </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
