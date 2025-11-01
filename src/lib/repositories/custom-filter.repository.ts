@@ -7,6 +7,7 @@ export interface CustomFilter {
   parentId: string | null
   level: number
   isActive: boolean
+  isFeatured: boolean
   createdAt: string
   updatedAt: string
 }
@@ -22,7 +23,8 @@ export interface CustomFilterWithChildren extends CustomFilter {
 export async function createCustomFilter(
   session: Session,
   name: string,
-  parentIds: string[]
+  parentIds: string[],
+  isFeatured: boolean = false
 ): Promise<CustomFilter> {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
   const id = `filter-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
@@ -49,13 +51,14 @@ export async function createCustomFilter(
       slug: $slug,
       level: $level,
       isActive: true,
+      isFeatured: $isFeatured,
       createdAt: datetime().epochMillis,
       updatedAt: datetime().epochMillis
     })
     RETURN f
   `
 
-  const createResult = await session.run(createQuery, { id, name, slug, level })
+  const createResult = await session.run(createQuery, { id, name, slug, level, isFeatured })
   const record = createResult.records[0]
   const node = record.get('f').properties
 
@@ -79,6 +82,7 @@ export async function createCustomFilter(
     parentId: null, // Multiple parents, so this field is not used
     level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
     isActive: node.isActive,
+    isFeatured: node.isFeatured || false,
     createdAt: node.createdAt.toString(),
     updatedAt: node.updatedAt.toString(),
   }
@@ -105,6 +109,7 @@ export async function getRootFilters(session: Session): Promise<CustomFilter[]> 
       parentId: null,
       level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
       isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
       createdAt: node.createdAt.toString(),
       updatedAt: node.updatedAt.toString(),
     }
@@ -134,6 +139,7 @@ export async function getChildFilters(
       parentId: record.get('parentId'),
       level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
       isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
       createdAt: node.createdAt.toString(),
       updatedAt: node.updatedAt.toString(),
     }
@@ -167,6 +173,7 @@ export async function getFilterWithChildren(
     parentId: parentId,
     level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
     isActive: node.isActive,
+    isFeatured: node.isFeatured || false,
     createdAt: node.createdAt.toString(),
     updatedAt: node.updatedAt.toString(),
     children: [],
@@ -241,6 +248,7 @@ export async function getAllFilters(session: Session): Promise<CustomFilter[]> {
       parentId: record.get('parentId'),
       level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
       isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
       createdAt: node.createdAt.toString(),
       updatedAt: node.updatedAt.toString(),
     }
@@ -281,6 +289,7 @@ export async function updateCustomFilter(
     parentId: record.get('parentId'),
     level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
     isActive: node.isActive,
+    isFeatured: node.isFeatured || false,
     createdAt: node.createdAt.toString(),
     updatedAt: node.updatedAt.toString(),
   }
@@ -472,6 +481,7 @@ export async function getProductFilters(
       parentId: record.get('parentId'),
       level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
       isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
       createdAt: node.createdAt.toString(),
       updatedAt: node.updatedAt.toString(),
     }
@@ -505,6 +515,7 @@ export async function getFilterBreadcrumb(
       parentId: null, // Not needed for breadcrumb display
       level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
       isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
       createdAt: node.createdAt.toString(),
       updatedAt: node.updatedAt.toString(),
     }
@@ -675,4 +686,137 @@ export async function validateNoCycles(
   }
 
   return { valid: true }
+}
+
+/**
+ * Update the featured status of a filter
+ */
+export async function updateFilterFeaturedStatus(
+  session: Session,
+  filterId: string,
+  isFeatured: boolean
+): Promise<CustomFilter | null> {
+  const query = `
+    MATCH (f:CustomFilter {id: $filterId})
+    SET f.isFeatured = $isFeatured,
+        f.updatedAt = datetime().epochMillis
+    OPTIONAL MATCH (f)-[:CHILD_OF]->(p:CustomFilter)
+    RETURN f, p.id as parentId
+  `
+
+  const result = await session.run(query, { filterId, isFeatured })
+  if (result.records.length === 0) return null
+
+  const record = result.records[0]
+  const node = record.get('f').properties
+
+  return {
+    id: node.id,
+    name: node.name,
+    slug: node.slug,
+    parentId: record.get('parentId'),
+    level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
+    isActive: node.isActive,
+    isFeatured: node.isFeatured || false,
+    createdAt: node.createdAt.toString(),
+    updatedAt: node.updatedAt.toString(),
+  }
+}
+
+/**
+ * Get all featured filters (active only)
+ */
+export async function getFeaturedFilters(session: Session): Promise<CustomFilter[]> {
+  const query = `
+    MATCH (f:CustomFilter)
+    WHERE f.isFeatured = true AND f.isActive = true
+    OPTIONAL MATCH (f)-[:CHILD_OF]->(p:CustomFilter)
+    RETURN f, p.id as parentId
+    ORDER BY f.level, f.name
+  `
+
+  const result = await session.run(query)
+  return result.records.map((record) => {
+    const node = record.get('f').properties
+    return {
+      id: node.id,
+      name: node.name,
+      slug: node.slug,
+      parentId: record.get('parentId'),
+      level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
+      isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
+      createdAt: node.createdAt.toString(),
+      updatedAt: node.updatedAt.toString(),
+    }
+  })
+}
+
+/**
+ * Get product count for a single filter
+ */
+export async function getProductCountByFilter(
+  session: Session,
+  filterId: string,
+  includeChildren: boolean = true
+): Promise<number> {
+  let query = ''
+
+  if (includeChildren) {
+    query = `
+      MATCH (f:CustomFilter {id: $filterId})
+      MATCH path = (f)<-[:CHILD_OF*0..]-(descendant:CustomFilter)
+      MATCH (p:Product)-[:TAGGED_WITH]->(descendant)
+      RETURN count(DISTINCT p) as productCount
+    `
+  } else {
+    query = `
+      MATCH (p:Product)-[:TAGGED_WITH]->(f:CustomFilter {id: $filterId})
+      RETURN count(p) as productCount
+    `
+  }
+
+  const result = await session.run(query, { filterId })
+  const countRaw = result.records[0]?.get('productCount')
+  return typeof countRaw === 'number' ? countRaw : countRaw?.toNumber() || 0
+}
+
+/**
+ * Get product counts for multiple filters (batch query for efficiency)
+ */
+export async function getProductCountsForFilters(
+  session: Session,
+  filterIds: string[]
+): Promise<Map<string, number>> {
+  if (filterIds.length === 0) {
+    return new Map()
+  }
+
+  const query = `
+    UNWIND $filterIds as filterId
+    MATCH (f:CustomFilter {id: filterId})
+    MATCH path = (f)<-[:CHILD_OF*0..]-(descendant:CustomFilter)
+    MATCH (p:Product)-[:TAGGED_WITH]->(descendant)
+    WITH filterId, count(DISTINCT p) as productCount
+    RETURN filterId, productCount
+  `
+
+  const result = await session.run(query, { filterIds })
+  const countsMap = new Map<string, number>()
+
+  result.records.forEach((record) => {
+    const filterId = record.get('filterId')
+    const countRaw = record.get('productCount')
+    const count = typeof countRaw === 'number' ? countRaw : countRaw.toNumber()
+    countsMap.set(filterId, count)
+  })
+
+  // Ensure all filterIds have a count (even if 0)
+  filterIds.forEach(id => {
+    if (!countsMap.has(id)) {
+      countsMap.set(id, 0)
+    }
+  })
+
+  return countsMap
 }

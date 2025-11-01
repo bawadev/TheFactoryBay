@@ -9,6 +9,7 @@ import {
   updateCustomFilterAction,
   deleteCustomFilterAction,
   getAllFiltersTreeAction,
+  updateFilterFeaturedStatusAction,
 } from '@/app/actions/custom-filters'
 
 interface CustomFiltersClientProps {
@@ -23,6 +24,7 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
   const [selectedParentIds, setSelectedParentIds] = useState<string[]>([])
   const [editingFilter, setEditingFilter] = useState<{ id: string; name: string } | null>(null)
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(new Set())
+  const [showOnlyFeatured, setShowOnlyFeatured] = useState(false)
 
   const refreshFilters = async () => {
     const result = await getAllFiltersTreeAction()
@@ -74,6 +76,15 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
     }
   }
 
+  const handleToggleFeatured = async (filterId: string, currentFeatured: boolean) => {
+    const result = await updateFilterFeaturedStatusAction(filterId, !currentFeatured)
+    if (result.success) {
+      await refreshFilters()
+    } else {
+      alert(result.error || 'Failed to update featured status')
+    }
+  }
+
   const toggleExpand = (filterId: string) => {
     const newExpanded = new Set(expandedFilters)
     if (newExpanded.has(filterId)) {
@@ -122,6 +133,20 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
     })
   }
 
+  // Filter the tree based on featured status
+  const filterTree = (filters: CustomFilterWithChildren[]): CustomFilterWithChildren[] => {
+    if (!showOnlyFeatured) return filters
+
+    return filters
+      .map(filter => ({
+        ...filter,
+        children: filterTree(filter.children)
+      }))
+      .filter(filter => filter.isFeatured || filter.children.length > 0)
+  }
+
+  const filteredFilters = filterTree(filters)
+
   const renderFilter = (filter: CustomFilterWithChildren, depth: number = 0) => {
     const hasChildren = filter.children && filter.children.length > 0
     const isExpanded = expandedFilters.has(filter.id)
@@ -169,15 +194,35 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
               autoFocus
             />
           ) : (
-            <span className={`flex-1 font-medium ${filter.isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-              {filter.name}
-            </span>
+            <div className="flex-1 flex items-center gap-2">
+              <span className={`font-medium ${filter.isActive ? 'text-gray-900' : 'text-gray-400'}`}>
+                {filter.name}
+              </span>
+              {filter.isFeatured && (
+                <svg className="w-4 h-4 text-yellow-500 fill-current" viewBox="0 0 20 20">
+                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                </svg>
+              )}
+            </div>
           )}
 
           {/* Badge for level */}
           <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
             Level {filter.level}
           </span>
+
+          {/* Featured Toggle */}
+          <button
+            onClick={() => handleToggleFeatured(filter.id, filter.isFeatured)}
+            className={`text-xs px-2 py-1 rounded ${
+              filter.isFeatured
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-gray-100 text-gray-500'
+            }`}
+            title={filter.isFeatured ? 'Featured' : 'Not Featured'}
+          >
+            {filter.isFeatured ? 'Featured' : 'Hidden'}
+          </button>
 
           {/* Active Toggle */}
           <button
@@ -275,6 +320,16 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
             </div>
             <div className="flex items-center gap-3">
               <button
+                onClick={() => setShowOnlyFeatured(!showOnlyFeatured)}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                  showOnlyFeatured
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {showOnlyFeatured ? 'Show All' : 'Show Featured Only'}
+              </button>
+              <button
                 onClick={() => {
                   setSelectedParentIds([])
                   setShowCreateModal(true)
@@ -297,7 +352,7 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
       {/* Filters Tree */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          {filters.length === 0 ? (
+          {filteredFilters.length === 0 ? (
             <div className="p-12 text-center">
               <svg
                 className="mx-auto h-12 w-12 text-gray-400"
@@ -312,14 +367,19 @@ export default function CustomFiltersClient({ initialFilters }: CustomFiltersCli
                   d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No filters</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                {showOnlyFeatured ? 'No featured filters' : 'No filters'}
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Get started by creating a new root filter
+                {showOnlyFeatured
+                  ? 'Mark some filters as featured to see them here'
+                  : 'Get started by creating a new root filter'
+                }
               </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {filters.map((filter) => renderFilter(filter))}
+              {filteredFilters.map((filter) => renderFilter(filter))}
             </div>
           )}
         </div>

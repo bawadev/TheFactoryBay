@@ -358,3 +358,91 @@ export async function updateFilterParentsAction(
     await session.close()
   }
 }
+
+/**
+ * Update filter featured status
+ */
+export async function updateFilterFeaturedStatusAction(
+  filterId: string,
+  isFeatured: boolean
+) {
+  const session = getSession()
+
+  try {
+    const adminAccess = await isAdmin()
+    if (!adminAccess) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const filter = await filterRepo.updateFilterFeaturedStatus(session, filterId, isFeatured)
+    if (!filter) {
+      return { success: false, error: 'Filter not found' }
+    }
+
+    return { success: true, data: filter }
+  } catch (error) {
+    console.error('Error updating filter featured status:', error)
+    return { success: false, error: 'Failed to update featured status' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Get featured filters (active only)
+ */
+export async function getFeaturedFiltersAction() {
+  const session = getSession()
+
+  try {
+    const filters = await filterRepo.getFeaturedFilters(session)
+    return { success: true, data: filters }
+  } catch (error) {
+    console.error('Error fetching featured filters:', error)
+    return { success: false, error: 'Failed to fetch featured filters' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Get product counts for multiple filters
+ */
+export async function getProductCountsForFiltersAction(filterIds: string[]) {
+  const session = getSession()
+
+  try {
+    const countsMap = await filterRepo.getProductCountsForFilters(session, filterIds)
+    // Convert Map to object for serialization
+    const countsObj: Record<string, number> = {}
+    countsMap.forEach((count, id) => {
+      countsObj[id] = count
+    })
+    return { success: true, data: countsObj }
+  } catch (error) {
+    console.error('Error fetching product counts:', error)
+    return { success: false, error: 'Failed to fetch product counts' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Get product count for a single filter
+ */
+export async function getProductCountByFilterAction(
+  filterId: string,
+  includeChildren: boolean = true
+) {
+  const session = getSession()
+
+  try {
+    const count = await filterRepo.getProductCountByFilter(session, filterId, includeChildren)
+    return { success: true, data: count }
+  } catch (error) {
+    console.error('Error fetching product count:', error)
+    return { success: false, error: 'Failed to fetch product count' }
+  } finally {
+    await session.close()
+  }
+}

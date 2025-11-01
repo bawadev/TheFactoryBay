@@ -23,6 +23,7 @@ interface FilterConfig {
   parents: string[]
   description?: string
   category?: string
+  isFeatured?: boolean
 }
 
 interface HierarchyConfig {
@@ -125,15 +126,17 @@ async function createFilters(
         }
 
         // Create the filter
-        const createdFilter = await createCustomFilter(session, filter.name, parentIds)
+        const isFeatured = filter.isFeatured || false
+        const createdFilter = await createCustomFilter(session, filter.name, parentIds, isFeatured)
         filterIdMap.set(filter.name, createdFilter.id)
         createdCount++
 
         const parentInfo = parentIds.length > 0
           ? ` (parents: ${filter.parents.join(', ')})`
           : ' (root)'
+        const featuredInfo = isFeatured ? ' ⭐' : ''
 
-        console.log(`   ✓ ${filter.name}${parentInfo}`)
+        console.log(`   ✓ ${filter.name}${parentInfo}${featuredInfo}`)
       }
     }
 
@@ -148,6 +151,16 @@ async function createFilters(
       if (filtersAtLevel.length > 0) {
         console.log(`   Level ${level}: ${filtersAtLevel.length} filters`)
       }
+    }
+
+    // Display featured filters count
+    const featuredCount = config.filters.filter(f => f.isFeatured).length
+    console.log(`\n⭐ Featured filters: ${featuredCount}`)
+    if (featuredCount > 0) {
+      console.log('   Featured filter names:')
+      config.filters.filter(f => f.isFeatured).forEach(f => {
+        console.log(`     - ${f.name} (Level ${f.level})`)
+      })
     }
 
   } catch (error) {

@@ -9,8 +9,9 @@ import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { PromotionalCategory } from '@/lib/types'
 import type { CustomFilter } from '@/lib/repositories/custom-filter.repository'
 import SearchAutocomplete from '@/components/SearchAutocomplete'
+import AdvancedFilterDialog from '@/components/filters/AdvancedFilterDialog'
 import {
-  getAllFiltersAction,
+  getFeaturedFiltersAction,
   getProductsByFiltersAction,
   getAllChildFilterIdsAction,
   getAllParentFilterIdsAction
@@ -89,6 +90,7 @@ export default function HomePageClient({
   const [selectedFilterIds, setSelectedFilterIds] = useState<Set<string>>(new Set())
   const [filteredProductIds, setFilteredProductIds] = useState<string[]>([])
   const [allFilters, setAllFilters] = useState<CustomFilter[]>([])
+  const [showAdvancedDialog, setShowAdvancedDialog] = useState(false)
 
   // Group filters by name for deduplication
   interface GroupedFilter {
@@ -96,12 +98,13 @@ export default function HomePageClient({
     level: number
     filterIds: string[]
     isActive: boolean
+    isFeatured: boolean
   }
   const [groupedFilters, setGroupedFilters] = useState<GroupedFilter[]>([])
 
-  // Load all filters on mount and group by name
+  // Load featured filters on mount and group by name
   useEffect(() => {
-    getAllFiltersAction().then((result) => {
+    getFeaturedFiltersAction().then((result) => {
       if (result.success && result.data) {
         setAllFilters(result.data)
 
@@ -114,13 +117,15 @@ export default function HomePageClient({
               name: filter.name,
               level: filter.level,
               filterIds: [filter.id],
-              isActive: filter.isActive
+              isActive: filter.isActive,
+              isFeatured: filter.isFeatured
             })
           } else {
             const existing = filtersByName.get(filter.name)!
             existing.filterIds.push(filter.id)
-            // If any instance is active, consider it active
+            // If any instance is active or featured, consider it active/featured
             existing.isActive = existing.isActive || filter.isActive
+            existing.isFeatured = existing.isFeatured || filter.isFeatured
           }
         })
 
@@ -287,14 +292,25 @@ export default function HomePageClient({
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Filter by Category</h3>
-            {selectedFilterIds.size > 0 && (
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setSelectedFilterIds(new Set())}
-                className="text-sm text-navy-600 hover:text-navy-700 font-medium"
+                onClick={() => setShowAdvancedDialog(true)}
+                className="px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700 transition-colors font-medium text-sm flex items-center gap-2"
               >
-                Clear All ({selectedFilterIds.size} selected)
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                Advanced Filters
               </button>
-            )}
+              {selectedFilterIds.size > 0 && (
+                <button
+                  onClick={() => setSelectedFilterIds(new Set())}
+                  className="text-sm text-navy-600 hover:text-navy-700 font-medium"
+                >
+                  Clear All ({selectedFilterIds.size} selected)
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Category Chips */}
@@ -461,6 +477,14 @@ export default function HomePageClient({
           </div>
         </section>
       )}
+
+      {/* Advanced Filter Dialog */}
+      <AdvancedFilterDialog
+        isOpen={showAdvancedDialog}
+        onClose={() => setShowAdvancedDialog(false)}
+        selectedFilterIds={selectedFilterIds}
+        onApplyFilters={setSelectedFilterIds}
+      />
     </main>
   )
 }
