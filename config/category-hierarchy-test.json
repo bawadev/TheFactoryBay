@@ -1,0 +1,181 @@
+{
+  "$schema": "Test configuration with diverse categories",
+  "description": "Testing configuration with Electronics, Books, Clothing, and Pets",
+  "filters": [
+    {
+      "name": "Men",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Women",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Electronics",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Books",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Office Wear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Casual Wear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Computers",
+      "level": 1,
+      "parents": ["Electronics"]
+    },
+    {
+      "name": "Mobile Devices",
+      "level": 1,
+      "parents": ["Electronics"]
+    },
+    {
+      "name": "Fiction",
+      "level": 1,
+      "parents": ["Books"]
+    },
+    {
+      "name": "Non-Fiction",
+      "level": 1,
+      "parents": ["Books"]
+    },
+    {
+      "name": "Accessories",
+      "level": 1,
+      "parents": ["Men", "Women", "Electronics"]
+    },
+    {
+      "name": "Blazers",
+      "level": 2,
+      "parents": ["Office Wear", "Men", "Women"]
+    },
+    {
+      "name": "Dress Shirts",
+      "level": 2,
+      "parents": ["Office Wear", "Men"]
+    },
+    {
+      "name": "Blouses",
+      "level": 2,
+      "parents": ["Office Wear", "Women"]
+    },
+    {
+      "name": "T-Shirts",
+      "level": 2,
+      "parents": ["Casual Wear", "Men", "Women"]
+    },
+    {
+      "name": "Laptops",
+      "level": 2,
+      "parents": ["Computers"]
+    },
+    {
+      "name": "Desktops",
+      "level": 2,
+      "parents": ["Computers"]
+    },
+    {
+      "name": "Smartphones",
+      "level": 2,
+      "parents": ["Mobile Devices"]
+    },
+    {
+      "name": "Tablets",
+      "level": 2,
+      "parents": ["Mobile Devices"]
+    },
+    {
+      "name": "Science Fiction",
+      "level": 2,
+      "parents": ["Fiction"]
+    },
+    {
+      "name": "Mystery",
+      "level": 2,
+      "parents": ["Fiction"]
+    },
+    {
+      "name": "Biography",
+      "level": 2,
+      "parents": ["Non-Fiction"]
+    },
+    {
+      "name": "Technology",
+      "level": 2,
+      "parents": ["Non-Fiction", "Electronics"]
+    },
+    {
+      "name": "Watches",
+      "level": 2,
+      "parents": ["Accessories", "Men", "Women"]
+    },
+    {
+      "name": "Phone Cases",
+      "level": 2,
+      "parents": ["Accessories", "Electronics"]
+    },
+    {
+      "name": "Gaming Laptops",
+      "level": 3,
+      "parents": ["Laptops"]
+    },
+    {
+      "name": "Business Laptops",
+      "level": 3,
+      "parents": ["Laptops"]
+    },
+    {
+      "name": "iPhone",
+      "level": 3,
+      "parents": ["Smartphones"]
+    },
+    {
+      "name": "Android",
+      "level": 3,
+      "parents": ["Smartphones"]
+    },
+    {
+      "name": "Space Opera",
+      "level": 3,
+      "parents": ["Science Fiction"]
+    },
+    {
+      "name": "Cyberpunk",
+      "level": 3,
+      "parents": ["Science Fiction"]
+    },
+    {
+      "name": "Smart Watches",
+      "level": 3,
+      "parents": ["Watches", "Electronics"]
+    },
+    {
+      "name": "Luxury Watches",
+      "level": 3,
+      "parents": ["Watches", "Men", "Women"]
+    },
+    {
+      "name": "RTX Gaming Laptops",
+      "level": 4,
+      "parents": ["Gaming Laptops"]
+    },
+    {
+      "name": "iPhone Pro",
+      "level": 4,
+      "parents": ["iPhone"]
+    }
+  ]
+}

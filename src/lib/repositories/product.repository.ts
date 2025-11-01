@@ -272,35 +272,32 @@ export async function createProduct(
     const productId = crypto.randomUUID()
     const now = new Date().toISOString()
 
-    // Create the product
+    // Create the product (category is optional, use filters instead via TAGGED_WITH relationship)
+    const productProps: any = {
+      id: productId,
+      name: product.name,
+      description: product.description,
+      brand: product.brand,
+      gender: product.gender,
+      stockPrice: product.stockPrice,
+      retailPrice: product.retailPrice,
+      sku: product.sku,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    // Include category only if provided (backward compatibility)
+    if (product.category) {
+      productProps.category = product.category
+    }
+
     await session.run(
       `
-      CREATE (p:Product {
-        id: $id,
-        name: $name,
-        description: $description,
-        brand: $brand,
-        category: $category,
-        gender: $gender,
-        stockPrice: $stockPrice,
-        retailPrice: $retailPrice,
-        sku: $sku,
-        createdAt: $createdAt,
-        updatedAt: $updatedAt
-      })
+      CREATE (p:Product)
+      SET p = $props
       `,
       {
-        id: productId,
-        name: product.name,
-        description: product.description,
-        brand: product.brand,
-        category: product.category,
-        gender: product.gender,
-        stockPrice: product.stockPrice,
-        retailPrice: product.retailPrice,
-        sku: product.sku,
-        createdAt: now,
-        updatedAt: now,
+        props: productProps,
       }
     )
 

@@ -56,7 +56,7 @@ export interface Product {
   name: string
   description: string
   brand: string
-  category: ProductCategory
+  category?: ProductCategory // DEPRECATED: Use filters (TAGGED_WITH relationship) instead
   gender: ProductGender
   stockPrice: number
   retailPrice: number

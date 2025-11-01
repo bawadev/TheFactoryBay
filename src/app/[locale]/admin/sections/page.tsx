@@ -9,7 +9,7 @@ export default async function PromotionalCategoriesPage() {
   const locale = await getLocale()
 
   if (!adminAccess) {
-    redirect(`/${locale}/login?redirect=/${locale}/admin/promotional-categories`)
+    redirect(`/${locale}/login?redirect=/${locale}/admin/sections`)
   }
 
   const result = await getAllPromotionalCategoriesAction(false) // Get all categories including inactive

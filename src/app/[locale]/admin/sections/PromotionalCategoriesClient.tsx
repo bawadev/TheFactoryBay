@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -63,20 +63,15 @@ export default function PromotionalCategoriesClient({
   >({})
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<ToastState>({ message: '', type: 'success', show: false })
-  const [showProductView, setShowProductView] = useState(false)
-  const [productSearchQuery, setProductSearchQuery] = useState('')
-  const [productSearchResults, setProductSearchResults] = useState<ProductWithVariants[]>([])
-  const [selectedProductCategories, setSelectedProductCategories] = useState<
-    Array<{
-      category: PromotionalCategory
-      allocatedQuantity: number
-      soldQuantity: number
-      remainingQuantity: number
-    }>
-  >([])
-  const [viewingProduct, setViewingProduct] = useState<ProductWithVariants | null>(null)
   const [editingQuantity, setEditingQuantity] = useState<string | null>(null)
   const [editQuantityValue, setEditQuantityValue] = useState<number>(0)
+  const [multiSectionProducts, setMultiSectionProducts] = useState<
+    Array<{
+      product: ProductWithVariants
+      sections: Array<{ category: PromotionalCategory; allocatedQuantity: number }>
+    }>
+  >([])
+  const [showAllMultiSection, setShowAllMultiSection] = useState(false)
   const router = useRouter()
 
   const showToast = (message: string, type: ToastType = 'success') => {
@@ -104,9 +99,9 @@ export default function PromotionalCategoriesClient({
       setCategories([...categories, result.data])
       setShowCreateForm(false)
       resetForm()
-      showToast('Category created successfully!', 'success')
+      showToast('Section created successfully!', 'success')
     } else {
-      showToast(result.message || 'Failed to create category', 'error')
+      showToast(result.message || 'Failed to create section', 'error')
     }
     setLoading(false)
   }
@@ -120,15 +115,15 @@ export default function PromotionalCategoriesClient({
       setCategories(categories.map((c) => (c.id === result.data!.id ? result.data! : c)))
       setEditingCategory(null)
       resetForm()
-      showToast('Category updated successfully!', 'success')
+      showToast('Section updated successfully!', 'success')
     } else {
-      showToast(result.message || 'Failed to update category', 'error')
+      showToast(result.message || 'Failed to update section', 'error')
     }
     setLoading(false)
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    if (!confirm('Are you sure you want to delete this section?')) return
 
     setLoading(true)
     const result = await deletePromotionalCategoryAction(categoryId)
@@ -138,9 +133,9 @@ export default function PromotionalCategoriesClient({
         setSelectedCategory(null)
         setCategoryProducts([])
       }
-      showToast('Category deleted successfully!', 'success')
+      showToast('Section deleted successfully!', 'success')
     } else {
-      showToast(result.message || 'Failed to delete category', 'error')
+      showToast(result.message || 'Failed to delete section', 'error')
     }
     setLoading(false)
   }
@@ -251,7 +246,7 @@ export default function PromotionalCategoriesClient({
   }
 
   const handleRemoveProduct = async (productId: string) => {
-    if (!selectedCategory || !confirm('Remove this product from the category?')) return
+    if (!selectedCategory || !confirm('Remove this product from the section?')) return
 
     setLoading(true)
     const result = await removeProductFromCategoryAction(selectedCategory, productId)
@@ -309,28 +304,42 @@ export default function PromotionalCategoriesClient({
     setLoading(false)
   }
 
-  const handleSearchProductsForView = async () => {
-    if (productSearchQuery.trim().length < 2) return
+  const loadMultiSectionProducts = async () => {
+    // Get all products from all categories and find those in multiple sections
+    const productMap = new Map<string, { product: ProductWithVariants; sections: Array<{ category: PromotionalCategory; allocatedQuantity: number }> }>()
 
-    setLoading(true)
-    const result = await searchProductsAction(productSearchQuery)
-    if (result.success && result.products) {
-      setProductSearchResults(result.products)
+    for (const category of categories) {
+      const result = await getCategoryItemsWithDetailsAction(category.id)
+      if (result.success && result.data) {
+        for (const item of result.data) {
+          const existing = productMap.get(item.product.id)
+          if (existing) {
+            existing.sections.push({ category, allocatedQuantity: item.allocatedQuantity })
+          } else {
+            productMap.set(item.product.id, {
+              product: item.product,
+              sections: [{ category, allocatedQuantity: item.allocatedQuantity }]
+            })
+          }
+        }
+      }
     }
-    setLoading(false)
+
+    // Filter to only products in 2+ sections and sort by number of sections
+    const multiProducts = Array.from(productMap.values())
+      .filter(item => item.sections.length >= 2)
+      .sort((a, b) => b.sections.length - a.sections.length)
+
+    setMultiSectionProducts(multiProducts)
   }
 
-  const handleViewProductCategories = async (product: ProductWithVariants) => {
-    setViewingProduct(product)
-    setLoading(true)
-    const result = await getProductCategoriesAction(product.id)
-    if (result.success && result.data) {
-      setSelectedProductCategories(result.data)
-    } else {
-      setSelectedProductCategories([])
+  // Load multi-section products when categories are available
+  useEffect(() => {
+    if (categories.length > 0) {
+      loadMultiSectionProducts()
     }
-    setLoading(false)
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -340,7 +349,7 @@ export default function PromotionalCategoriesClient({
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-navy-900">Promotional Categories</h1>
+                <h1 className="text-3xl font-bold text-navy-900">Promotional Sections</h1>
                 <Link
                   href={`/${locale}/admin/dashboard`}
                   className="text-sm text-navy-600 hover:text-navy-700 font-medium flex items-center gap-1"
@@ -352,184 +361,26 @@ export default function PromotionalCategoriesClient({
                 </Link>
               </div>
               <p className="mt-1 text-sm text-gray-600">
-                Manage promotional categories and assign products
+                Manage promotional sections and assign products
               </p>
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
               className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
             >
-              + Create Category
+              + Create Section
             </button>
           </div>
         </div>
       </div>
 
-      {/* Product View Section */}
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <button
-            onClick={() => setShowProductView(!showProductView)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-          >
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">View Product Assignments</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Search for a product to see which promotional categories it belongs to
-              </p>
-            </div>
-            <svg
-              className={`w-6 h-6 text-gray-600 transition-transform ${
-                showProductView ? 'rotate-180' : ''
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {showProductView && (
-            <div className="px-6 pb-6 border-t border-gray-200">
-              {/* Search Section */}
-              <div className="mt-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Search products by name, brand, or SKU..."
-                    value={productSearchQuery}
-                    onChange={(e) => setProductSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearchProductsForView()}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
-                  />
-                  <button
-                    onClick={handleSearchProductsForView}
-                    className="bg-navy-600 text-white px-6 py-2 rounded-lg hover:bg-navy-700 transition-colors"
-                  >
-                    Search
-                  </button>
-                </div>
-
-                {/* Search Results */}
-                {productSearchResults.length > 0 && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {productSearchResults.map((product) => {
-                      const totalStock = product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
-                      return (
-                        <button
-                          key={product.id}
-                          onClick={() => handleViewProductCategories(product)}
-                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-purple-500 transition-colors text-left"
-                        >
-                          <div className="relative w-16 h-16 bg-gray-100 rounded flex-shrink-0">
-                            {product.variants[0]?.images[0] && (
-                              <Image
-                                src={product.variants[0].images[0]}
-                                alt={product.name}
-                                fill
-                                className="object-cover rounded"
-                                sizes="64px"
-                              />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate">{product.name}</p>
-                            <p className="text-xs text-gray-600">{product.brand}</p>
-                            <p className="text-xs text-green-600 mt-1">Stock: {totalStock}</p>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Product Categories Display */}
-              {viewingProduct && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-300">
-                    <div className="relative w-20 h-20 bg-gray-100 rounded flex-shrink-0">
-                      {viewingProduct.variants[0]?.images[0] && (
-                        <Image
-                          src={viewingProduct.variants[0].images[0]}
-                          alt={viewingProduct.name}
-                          fill
-                          className="object-cover rounded"
-                          sizes="80px"
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-900">{viewingProduct.name}</h3>
-                      <p className="text-sm text-gray-600">{viewingProduct.brand}</p>
-                      <p className="text-sm text-gray-600">SKU: {viewingProduct.sku}</p>
-                    </div>
-                  </div>
-
-                  {selectedProductCategories.length > 0 ? (
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">
-                        Promotional Categories ({selectedProductCategories.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {selectedProductCategories.map(
-                          ({ category, allocatedQuantity, soldQuantity, remainingQuantity }) => (
-                            <div
-                              key={category.id}
-                              className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h5 className="font-semibold text-gray-900">{category.name}</h5>
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                      category.isActive
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-gray-100 text-gray-600'
-                                    }`}
-                                  >
-                                    {category.isActive ? 'Active' : 'Inactive'}
-                                  </span>
-                                </div>
-                                {category.description && (
-                                  <p className="text-xs text-gray-600 mt-1">{category.description}</p>
-                                )}
-                                <div className="flex items-center gap-4 mt-2 text-xs">
-                                  <span className="text-gray-600">
-                                    Allocated: <strong className="text-navy-900">{allocatedQuantity}</strong>
-                                  </span>
-                                  <span className="text-gray-600">
-                                    Sold: <strong className="text-orange-600">{soldQuantity}</strong>
-                                  </span>
-                                  <span className="text-gray-600">
-                                    Remaining: <strong className="text-green-600">{remainingQuantity}</strong>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-center text-gray-500 py-6">
-                      This product is not assigned to any promotional categories yet.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Main Sections Management */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Categories List */}
+          {/* Sections List */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Sections</h2>
               <div className="space-y-2">
                 {categories.map((category) => (
                   <div
@@ -593,11 +444,11 @@ export default function PromotionalCategoriesClient({
             </div>
           </div>
 
-          {/* Category Products */}
+          {/* Section Products */}
           <div className="lg:col-span-2">
             {selectedCategory ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Products in Category</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Products in Section</h2>
 
                 {/* Add Product Section */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -889,26 +740,103 @@ export default function PromotionalCategoriesClient({
 
                   {categoryProducts.length === 0 && (
                     <p className="text-center text-gray-500 py-8">
-                      No products in this category yet. Use the search above to add products.
+                      No products in this section yet. Use the search above to add products.
                     </p>
                   )}
                 </div>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                <p className="text-gray-500">Select a category to manage its products</p>
+                <p className="text-gray-500">Select a section to manage its products</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
+      {/* Products in Multiple Sections */}
+      {multiSectionProducts.length > 0 && (
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Products in Multiple Sections</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Products that appear in 2 or more promotional sections
+                </p>
+              </div>
+              {multiSectionProducts.length > 6 && (
+                <button
+                  onClick={() => setShowAllMultiSection(!showAllMultiSection)}
+                  className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-1"
+                >
+                  {showAllMultiSection ? 'Show Less' : 'See All'}
+                  <svg className={`w-4 h-4 transition-transform ${showAllMultiSection ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(showAllMultiSection ? multiSectionProducts : multiSectionProducts.slice(0, 6)).map(({ product, sections }) => {
+                const totalStock = product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-purple-300 transition-colors"
+                  >
+                    <div className="flex gap-3 mb-3">
+                      <div className="relative w-20 h-20 bg-gray-100 rounded flex-shrink-0">
+                        {product.variants[0]?.images[0] && (
+                          <Image
+                            src={product.variants[0].images[0]}
+                            alt={product.name}
+                            fill
+                            className="object-cover rounded"
+                            sizes="80px"
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                        <p className="text-sm text-gray-600">{product.brand}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Stock: <span className="text-green-600 font-medium">{totalStock}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        In {sections.length} section{sections.length > 1 ? 's' : ''}:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {sections.map(({ category, allocatedQuantity }) => (
+                          <span
+                            key={category.id}
+                            className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700"
+                          >
+                            {category.name}
+                            <span className="ml-1 text-purple-900 font-semibold">({allocatedQuantity})</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create/Edit Modal */}
       {(showCreateForm || editingCategory) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {editingCategory ? 'Edit Category' : 'Create Category'}
+              {editingCategory ? 'Edit Section' : 'Create Section'}
             </h2>
 
             <div className="space-y-4">

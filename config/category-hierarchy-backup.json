@@ -1,0 +1,193 @@
+{
+  "$schema": "Category hierarchy configuration for Factory Bay",
+  "description": "Define your custom category hierarchy here. You can have any structure - Men/Women, Pets, Kids, etc.",
+  "filters": [
+    {
+      "name": "Men",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Women",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Office Wear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Casual Wear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Sportswear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Footwear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Dress Shirts",
+      "level": 2,
+      "parents": ["Office Wear", "Men"]
+    },
+    {
+      "name": "Ties",
+      "level": 2,
+      "parents": ["Office Wear", "Men"]
+    },
+    {
+      "name": "Blouses",
+      "level": 2,
+      "parents": ["Office Wear", "Women"]
+    },
+    {
+      "name": "Skirts",
+      "level": 2,
+      "parents": ["Office Wear", "Women"]
+    },
+    {
+      "name": "Dress Trousers",
+      "level": 2,
+      "parents": ["Office Wear", "Men", "Women"]
+    },
+    {
+      "name": "Blazers",
+      "level": 2,
+      "parents": ["Office Wear", "Men", "Women"]
+    },
+    {
+      "name": "Casual Shirts",
+      "level": 2,
+      "parents": ["Casual Wear", "Men"]
+    },
+    {
+      "name": "Casual Tops",
+      "level": 2,
+      "parents": ["Casual Wear", "Women"]
+    },
+    {
+      "name": "T-Shirts",
+      "level": 2,
+      "parents": ["Casual Wear", "Men", "Women"]
+    },
+    {
+      "name": "Jeans",
+      "level": 2,
+      "parents": ["Casual Wear", "Men", "Women"]
+    },
+    {
+      "name": "Shorts",
+      "level": 2,
+      "parents": ["Casual Wear", "Men", "Women"]
+    },
+    {
+      "name": "Sports Shirts",
+      "level": 2,
+      "parents": ["Sportswear", "Men"]
+    },
+    {
+      "name": "Sports Tops",
+      "level": 2,
+      "parents": ["Sportswear", "Women"]
+    },
+    {
+      "name": "Sports Bras",
+      "level": 2,
+      "parents": ["Sportswear", "Women"]
+    },
+    {
+      "name": "Track Pants",
+      "level": 2,
+      "parents": ["Sportswear", "Men", "Women"]
+    },
+    {
+      "name": "Gym Shorts",
+      "level": 2,
+      "parents": ["Sportswear", "Men", "Women"]
+    },
+    {
+      "name": "Formal Shoes",
+      "level": 2,
+      "parents": ["Footwear", "Men", "Women"]
+    },
+    {
+      "name": "Casual Shoes",
+      "level": 2,
+      "parents": ["Footwear", "Men", "Women"]
+    },
+    {
+      "name": "Sports Shoes",
+      "level": 2,
+      "parents": ["Footwear", "Men", "Women"]
+    },
+    {
+      "name": "Sandals",
+      "level": 2,
+      "parents": ["Footwear", "Men", "Women"]
+    }
+  ],
+  "examples": {
+    "pets_hierarchy": {
+      "description": "Example: Add a Pets category at the top level",
+      "filters": [
+        {
+          "name": "Pets",
+          "level": 0,
+          "parents": []
+        },
+        {
+          "name": "Dogs",
+          "level": 1,
+          "parents": ["Pets"]
+        },
+        {
+          "name": "Cats",
+          "level": 1,
+          "parents": ["Pets"]
+        },
+        {
+          "name": "Dog Collars",
+          "level": 2,
+          "parents": ["Dogs", "Pets"]
+        },
+        {
+          "name": "Cat Toys",
+          "level": 2,
+          "parents": ["Cats", "Pets"]
+        }
+      ]
+    },
+    "kids_hierarchy": {
+      "description": "Example: Add a Kids category",
+      "filters": [
+        {
+          "name": "Kids",
+          "level": 0,
+          "parents": []
+        },
+        {
+          "name": "Boys",
+          "level": 1,
+          "parents": ["Kids"]
+        },
+        {
+          "name": "Girls",
+          "level": 1,
+          "parents": ["Kids"]
+        },
+        {
+          "name": "Toddlers",
+          "level": 1,
+          "parents": ["Kids"]
+        }
+      ]
+    }
+  }
+}

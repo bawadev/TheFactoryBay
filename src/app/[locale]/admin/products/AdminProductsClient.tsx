@@ -19,8 +19,16 @@ import {
   getAllPromotionalCategoriesAction,
   addProductToCategoryAction,
 } from '@/app/actions/promotional-categories'
+import {
+  tagProductWithFiltersAction,
+  getProductFiltersAction,
+  getFiltersBreadcrumbsAction,
+  getAllChildFilterIdsAction,
+} from '@/app/actions/custom-filters'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { ProductCategory, ProductGender, Product, PromotionalCategory } from '@/lib/types'
+import type { CustomFilter } from '@/lib/repositories/custom-filter.repository'
+import FilterPickerDialog from '@/components/filters/FilterPickerDialog'
 
 interface AdminProductsClientProps {
   products: ProductWithVariants[]
@@ -30,7 +38,8 @@ type FormData = {
   name: string
   description: string
   brand: string
-  category: ProductCategory
+  category?: ProductCategory // DEPRECATED: Use filterIds instead
+  filterIds: string[] // Selected filter IDs (replaces category)
   gender: ProductGender
   stockPrice: string
   retailPrice: string
@@ -53,7 +62,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     name: '',
     description: '',
     brand: '',
-    category: 'SHIRT',
+    filterIds: [],
     gender: 'UNISEX',
     stockPrice: '',
     retailPrice: '',
@@ -94,6 +103,15 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   const [assigningSections, setAssigningSections] = useState(false)
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
 
+  // Filter picker state (for existing products)
+  const [showFilterPicker, setShowFilterPicker] = useState(false)
+  const [selectedProductForFilters, setSelectedProductForFilters] = useState<ProductWithVariants | null>(null)
+  const [selectedFilterIds, setSelectedFilterIds] = useState<string[]>([])
+
+  // Filter picker state (for form - new/edit products)
+  const [showFormFilterPicker, setShowFormFilterPicker] = useState(false)
+  const [filterBreadcrumbs, setFilterBreadcrumbs] = useState<Record<string, CustomFilter[]>>({})
+
   const nameInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const brandInputRef = useRef<HTMLInputElement>(null)
@@ -109,6 +127,21 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     }
     loadBrands()
   }, [])
+
+  // Load breadcrumbs when filterIds change
+  useEffect(() => {
+    const loadBreadcrumbs = async () => {
+      if (formData.filterIds.length > 0) {
+        const result = await getFiltersBreadcrumbsAction(formData.filterIds)
+        if (result.success && result.data) {
+          setFilterBreadcrumbs(result.data)
+        }
+      } else {
+        setFilterBreadcrumbs({})
+      }
+    }
+    loadBreadcrumbs()
+  }, [formData.filterIds])
 
   // ESC key handler for image viewer
   useEffect(() => {
@@ -299,15 +332,52 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     alert('Product assigned to sections successfully!')
   }
 
-  const loadProductIntoForm = (product: ProductWithVariants) => {
+  const handleOpenFilterPicker = async (product: ProductWithVariants) => {
+    setSelectedProductForFilters(product)
+    setOpenDropdownId(null)
+
+    // Load current filters for this product
+    const result = await getProductFiltersAction(product.id)
+    if (result.success && result.data) {
+      setSelectedFilterIds(result.data.map(f => f.id))
+    } else {
+      setSelectedFilterIds([])
+    }
+
+    setShowFilterPicker(true)
+  }
+
+  const handleConfirmFilters = async (filterIds: string[]) => {
+    if (!selectedProductForFilters) return
+
+    const result = await tagProductWithFiltersAction(selectedProductForFilters.id, filterIds)
+    if (result.success) {
+      alert('Product filters updated successfully!')
+    } else {
+      alert(result.error || 'Failed to update filters')
+    }
+
+    setShowFilterPicker(false)
+    setSelectedProductForFilters(null)
+    setSelectedFilterIds([])
+  }
+
+  const loadProductIntoForm = async (product: ProductWithVariants) => {
     setIsEditing(true)
     setEditingId(product.id)
     setEditingProduct(product)
+
+    // Load product's filters
+    const filtersResult = await getProductFiltersAction(product.id)
+    const filterIds = filtersResult.success && filtersResult.data
+      ? filtersResult.data.map(f => f.id)
+      : []
+
     setFormData({
       name: product.name,
       description: product.description,
       brand: product.brand,
-      category: product.category,
+      filterIds,
       gender: product.gender,
       stockPrice: product.stockPrice.toString(),
       retailPrice: product.retailPrice.toString(),
@@ -336,7 +406,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       name: '',
       description: '',
       brand: '',
-      category: 'SHIRT',
+      filterIds: [],
       gender: 'UNISEX',
       stockPrice: '',
       retailPrice: '',
@@ -475,6 +545,11 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       return
     }
 
+    if (formData.filterIds.length === 0) {
+      alert('Please select at least one category')
+      return
+    }
+
     const stockPrice = parseFloat(formData.stockPrice)
     const retailPrice = parseFloat(formData.retailPrice)
 
@@ -492,7 +567,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           name: formData.name.trim(),
           description: formData.description.trim(),
           brand: formData.brand.trim(),
-          category: formData.category,
           gender: formData.gender,
           stockPrice,
           retailPrice,
@@ -502,6 +576,9 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         const result = await updateProductAction(editingId, updates)
 
         if (result.success) {
+          // Tag product with selected filters
+          await tagProductWithFiltersAction(editingId, formData.filterIds)
+
           // Refresh the products list
           const updatedProducts = products.map(p =>
             p.id === editingId
@@ -520,7 +597,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           name: formData.name.trim(),
           description: formData.description.trim(),
           brand: formData.brand.trim(),
-          category: formData.category,
           gender: formData.gender,
           stockPrice,
           retailPrice,
@@ -530,6 +606,9 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         const result = await createProductAction(newProduct, [])
 
         if (result.success && result.data) {
+          // Tag product with selected filters
+          await tagProductWithFiltersAction(result.data.product.id, formData.filterIds)
+
           setProducts([result.data.product, ...products])
           alert('Product created successfully! You can now add variants.')
           resetForm()
@@ -946,24 +1025,70 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                 />
               </div>
 
-              {/* Category */}
+              {/* Categories (Filters) */}
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                  Category *
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Categories *
                 </label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductCategory })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  required
+                <button
+                  type="button"
+                  onClick={() => setShowFormFilterPicker(true)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors text-left flex items-center justify-between"
                 >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                  <span className="text-gray-700">
+                    {formData.filterIds.length > 0
+                      ? `${formData.filterIds.length} categories selected`
+                      : 'Select categories'}
+                  </span>
+                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                {/* Selected Categories Chips */}
+                {formData.filterIds.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.filterIds.map((filterId) => {
+                      const breadcrumb = filterBreadcrumbs[filterId] || []
+                      // Get just the category name (last item in breadcrumb)
+                      const categoryName = breadcrumb.length > 0
+                        ? breadcrumb[breadcrumb.length - 1].name
+                        : 'Loading...'
+
+                      return (
+                        <div
+                          key={filterId}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm"
+                        >
+                          <span>{categoryName}</span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              // Remove this filter and all its children (auto-deselect)
+                              const idsToRemove = new Set([filterId])
+
+                              // Get all child filter IDs
+                              const childrenResult = await getAllChildFilterIdsAction(filterId)
+                              if (childrenResult.success && childrenResult.data) {
+                                childrenResult.data.forEach(childId => idsToRemove.add(childId))
+                              }
+
+                              // Filter out the filter and its children
+                              const newFilterIds = formData.filterIds.filter(id => !idsToRemove.has(id))
+                              setFormData({ ...formData, filterIds: newFilterIds })
+                            }}
+                            className="ml-1 hover:bg-indigo-200 rounded-full p-0.5 transition-colors"
+                            title="Remove category"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Gender */}
@@ -1234,6 +1359,18 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                                   </svg>
                                   Add to Sections
                                 </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleOpenFilterPicker(product)
+                                  }}
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-b-lg border-t border-gray-100"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                  </svg>
+                                  Tag with Filters
+                                </button>
                               </div>
                             )}
                           </div>
@@ -1438,6 +1575,29 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           </div>
         </div>
       )}
+
+      {/* Filter Picker Dialog (for existing products) */}
+      <FilterPickerDialog
+        isOpen={showFilterPicker}
+        onClose={() => {
+          setShowFilterPicker(false)
+          setSelectedProductForFilters(null)
+          setSelectedFilterIds([])
+        }}
+        onConfirm={handleConfirmFilters}
+        initialSelectedIds={selectedFilterIds}
+      />
+
+      {/* Filter Picker Dialog (for form - new/edit products) */}
+      <FilterPickerDialog
+        isOpen={showFormFilterPicker}
+        onClose={() => setShowFormFilterPicker(false)}
+        onConfirm={(filterIds) => {
+          setFormData({ ...formData, filterIds })
+          setShowFormFilterPicker(false)
+        }}
+        initialSelectedIds={formData.filterIds}
+      />
     </div>
   )
 }

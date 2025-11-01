@@ -1,0 +1,186 @@
+{
+  "$schema": "Extended category hierarchy with Pets and deeper levels",
+  "description": "Example showing Pets category with deep nesting (L0 through L5)",
+  "filters": [
+    {
+      "name": "Men",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Women",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Pets",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Kids",
+      "level": 0,
+      "parents": []
+    },
+    {
+      "name": "Office Wear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Casual Wear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Sportswear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Footwear",
+      "level": 1,
+      "parents": ["Men", "Women"]
+    },
+    {
+      "name": "Dogs",
+      "level": 1,
+      "parents": ["Pets"]
+    },
+    {
+      "name": "Cats",
+      "level": 1,
+      "parents": ["Pets"]
+    },
+    {
+      "name": "Birds",
+      "level": 1,
+      "parents": ["Pets"]
+    },
+    {
+      "name": "Boys",
+      "level": 1,
+      "parents": ["Kids"]
+    },
+    {
+      "name": "Girls",
+      "level": 1,
+      "parents": ["Kids"]
+    },
+    {
+      "name": "Toddlers",
+      "level": 1,
+      "parents": ["Kids"]
+    },
+    {
+      "name": "Dress Shirts",
+      "level": 2,
+      "parents": ["Office Wear", "Men"]
+    },
+    {
+      "name": "Blazers",
+      "level": 2,
+      "parents": ["Office Wear", "Men", "Women"]
+    },
+    {
+      "name": "T-Shirts",
+      "level": 2,
+      "parents": ["Casual Wear", "Men", "Women"]
+    },
+    {
+      "name": "Dog Apparel",
+      "level": 2,
+      "parents": ["Dogs"]
+    },
+    {
+      "name": "Dog Accessories",
+      "level": 2,
+      "parents": ["Dogs"]
+    },
+    {
+      "name": "Dog Food & Treats",
+      "level": 2,
+      "parents": ["Dogs"]
+    },
+    {
+      "name": "Cat Apparel",
+      "level": 2,
+      "parents": ["Cats"]
+    },
+    {
+      "name": "Cat Accessories",
+      "level": 2,
+      "parents": ["Cats"]
+    },
+    {
+      "name": "Bird Cages",
+      "level": 2,
+      "parents": ["Birds"]
+    },
+    {
+      "name": "Dog Jackets",
+      "level": 3,
+      "parents": ["Dog Apparel"]
+    },
+    {
+      "name": "Dog Sweaters",
+      "level": 3,
+      "parents": ["Dog Apparel"]
+    },
+    {
+      "name": "Dog Boots",
+      "level": 3,
+      "parents": ["Dog Apparel"]
+    },
+    {
+      "name": "Dog Collars",
+      "level": 3,
+      "parents": ["Dog Accessories"]
+    },
+    {
+      "name": "Dog Leashes",
+      "level": 3,
+      "parents": ["Dog Accessories"]
+    },
+    {
+      "name": "Dog Toys",
+      "level": 3,
+      "parents": ["Dog Accessories"]
+    },
+    {
+      "name": "Winter Dog Jackets",
+      "level": 4,
+      "parents": ["Dog Jackets"]
+    },
+    {
+      "name": "Rain Dog Jackets",
+      "level": 4,
+      "parents": ["Dog Jackets"]
+    },
+    {
+      "name": "Leather Collars",
+      "level": 4,
+      "parents": ["Dog Collars"]
+    },
+    {
+      "name": "Nylon Collars",
+      "level": 4,
+      "parents": ["Dog Collars"]
+    },
+    {
+      "name": "Small Breed Winter Jackets",
+      "level": 5,
+      "parents": ["Winter Dog Jackets"]
+    },
+    {
+      "name": "Large Breed Winter Jackets",
+      "level": 5,
+      "parents": ["Winter Dog Jackets"]
+    },
+    {
+      "name": "Reflective Leather Collars",
+      "level": 5,
+      "parents": ["Leather Collars"]
+    }
+  ]
+}

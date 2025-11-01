@@ -10,6 +10,10 @@
     "db:init": "tsx scripts/init-db.ts",
     "db:seed": "tsx scripts/seed-db.ts",
     "db:clear": "tsx scripts/clear-db.ts",
+    "setup:filters": "tsx scripts/setup-graph-hierarchy.ts",
+    "filters:setup": "tsx scripts/setup-default-filters.ts",
+    "filters:assign": "tsx scripts/assign-products-to-filters.ts",
+    "filters:init": "tsx scripts/initialize-filter-system.ts",
     "minio:init": "tsx scripts/init-minio.ts"
   },
   "dependencies": {

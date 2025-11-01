@@ -135,9 +135,9 @@ export default async function AdminDashboardPage() {
             </div>
           </Link>
 
-          {/* Promotional Categories Card */}
+          {/* Promotional Sections Card */}
           <Link
-            href={`/${locale}/admin/promotional-categories`}
+            href={`/${locale}/admin/sections`}
             className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
           >
             <div className="flex items-center mb-4">
@@ -156,13 +156,47 @@ export default async function AdminDashboardPage() {
                   />
                 </svg>
               </div>
-              <h2 className="ml-4 text-xl font-semibold text-gray-900">Promotions</h2>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Promotional Sections</h2>
             </div>
             <p className="text-sm text-gray-600">
-              Create and manage promotional categories like "Best Deals", "New Arrivals", and seasonal offers.
+              Create and manage promotional sections like "Best Sellers", "New Arrivals", and seasonal offers.
             </p>
             <div className="mt-4 flex items-center text-sm font-medium text-purple-600 group-hover:text-purple-700">
-              Manage Promotions
+              Manage Sections
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+
+          {/* Custom Filters Card */}
+          <Link
+            href={`/${locale}/admin/filters`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 group-hover:bg-indigo-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Custom Filters</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              Define hierarchical filters to organize products by custom categories like "Office Wares" or "Evening Dresses".
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-indigo-600 group-hover:text-indigo-700">
+              Manage Filters
               <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
