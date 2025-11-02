@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getPersonalizedRecommendationsAction, getRecentlyViewedProductsAction } from '@/app/actions/user-profile'
 import { getNewArrivals } from '@/lib/repositories/recommendation.repository'
 import { getAllPromotionalCategoriesAction, getProductsByCategoryAction } from '@/app/actions/promotional-categories'
-import HomePageClient from './HomePageClient'
+import HomePageClientProgressive from './HomePageClientProgressive'
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
   const user = await getCurrentUser()
@@ -31,7 +31,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
   )
 
   return (
-    <HomePageClient
+    <HomePageClientProgressive
       isAuthenticated={!!user}
       recommendations={recommendations}
       recentlyViewed={recentlyViewed}

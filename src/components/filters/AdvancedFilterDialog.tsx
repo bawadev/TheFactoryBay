@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { CustomFilter } from '@/lib/repositories/custom-filter.repository'
+import type { CustomFilterExtended } from '@/lib/repositories/custom-filter.repository'
 import {
-  getAllFiltersAction,
+  getAllFiltersWithParentsAction,
   getChildFiltersAction,
   getProductCountsForFiltersAction,
 } from '@/app/actions/custom-filters'
@@ -21,11 +21,11 @@ export default function AdvancedFilterDialog({
   selectedFilterIds: initialSelectedIds,
   onApplyFilters,
 }: AdvancedFilterDialogProps) {
-  const [allFilters, setAllFilters] = useState<CustomFilter[]>([])
+  const [allFilters, setAllFilters] = useState<CustomFilterExtended[]>([])
   const [selectedFilterIds, setSelectedFilterIds] = useState<Set<string>>(new Set(initialSelectedIds))
   const [expandedFilterIds, setExpandedFilterIds] = useState<Set<string>>(new Set())
-  const [currentPath, setCurrentPath] = useState<CustomFilter[]>([])
-  const [currentLevelFilters, setCurrentLevelFilters] = useState<CustomFilter[]>([])
+  const [currentPath, setCurrentPath] = useState<CustomFilterExtended[]>([])
+  const [currentLevelFilters, setCurrentLevelFilters] = useState<CustomFilterExtended[]>([])
   const [productCounts, setProductCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [countsLoading, setCountsLoading] = useState(false)
@@ -46,13 +46,13 @@ export default function AdvancedFilterDialog({
 
   const loadAllFilters = async () => {
     setLoading(true)
-    const result = await getAllFiltersAction()
+    const result = await getAllFiltersWithParentsAction()
     if (result.success && result.data) {
       const activeFilters = result.data.filter(f => f.isActive)
       setAllFilters(activeFilters)
 
-      // Show root filters initially
-      const rootFilters = activeFilters.filter(f => !f.parentId)
+      // Show root filters initially (filters with no parents)
+      const rootFilters = activeFilters.filter(f => f.parentIds.length === 0)
       setCurrentLevelFilters(rootFilters)
       setCurrentPath([])
     }
@@ -68,9 +68,9 @@ export default function AdvancedFilterDialog({
     setCountsLoading(false)
   }
 
-  const navigateToFilter = async (filter: CustomFilter) => {
-    // Get children of this filter
-    const children = allFilters.filter(f => f.parentId === filter.id)
+  const navigateToFilter = async (filter: CustomFilterExtended) => {
+    // Get children of this filter (filters that have this filter as a parent)
+    const children = allFilters.filter(f => f.parentIds.includes(filter.id))
 
     if (children.length > 0) {
       setCurrentLevelFilters(children)
@@ -86,12 +86,12 @@ export default function AdvancedFilterDialog({
 
     if (newPath.length === 0) {
       // Back to root
-      const rootFilters = allFilters.filter(f => !f.parentId)
+      const rootFilters = allFilters.filter(f => f.parentIds.length === 0)
       setCurrentLevelFilters(rootFilters)
     } else {
       // Back to parent's children
       const grandparent = newPath[newPath.length - 1]
-      const siblings = allFilters.filter(f => f.parentId === grandparent.id)
+      const siblings = allFilters.filter(f => f.parentIds.includes(grandparent.id))
       setCurrentLevelFilters(siblings)
     }
 
@@ -101,12 +101,12 @@ export default function AdvancedFilterDialog({
   const navigateToBreadcrumb = (index: number) => {
     if (index === -1) {
       // Navigate to root
-      const rootFilters = allFilters.filter(f => !f.parentId)
+      const rootFilters = allFilters.filter(f => f.parentIds.length === 0)
       setCurrentLevelFilters(rootFilters)
       setCurrentPath([])
     } else {
       const filter = currentPath[index]
-      const children = allFilters.filter(f => f.parentId === filter.id)
+      const children = allFilters.filter(f => f.parentIds.includes(filter.id))
       setCurrentLevelFilters(children)
       setCurrentPath(currentPath.slice(0, index + 1))
     }
@@ -114,10 +114,66 @@ export default function AdvancedFilterDialog({
 
   const toggleFilter = (filterId: string) => {
     const newSelected = new Set(selectedFilterIds)
+    const filter = allFilters.find(f => f.id === filterId)
+
     if (newSelected.has(filterId)) {
+      // Deselecting - remove this filter AND all its descendants
       newSelected.delete(filterId)
+
+      // Remove all descendants recursively
+      const removeAllDescendants = (parentFilterId: string) => {
+        const children = allFilters.filter(f => f.parentIds.includes(parentFilterId))
+        children.forEach(child => {
+          newSelected.delete(child.id)
+          // Recursively remove children's children
+          removeAllDescendants(child.id)
+        })
+      }
+      removeAllDescendants(filterId)
+
+      // Check if we should uncheck parents
+      // A parent should only be unchecked if no other children are selected
+      if (filter?.parentIds && filter.parentIds.length > 0) {
+        const checkParentSelection = (parentId: string) => {
+          // Find all children of this parent
+          const siblings = allFilters.filter(f => f.parentIds.includes(parentId))
+          const hasSelectedSibling = siblings.some(s => newSelected.has(s.id))
+
+          if (!hasSelectedSibling) {
+            newSelected.delete(parentId)
+            // Recursively check grandparents
+            const parent = allFilters.find(f => f.id === parentId)
+            if (parent?.parentIds && parent.parentIds.length > 0) {
+              parent.parentIds.forEach(grandparentId => {
+                checkParentSelection(grandparentId)
+              })
+            }
+          }
+        }
+
+        // Check all direct parents
+        filter.parentIds.forEach(parentId => {
+          checkParentSelection(parentId)
+        })
+      }
     } else {
+      // Selecting - add this filter and all its parents recursively
       newSelected.add(filterId)
+
+      // Add all parent filters up the hierarchy
+      if (filter?.parentIds && filter.parentIds.length > 0) {
+        const addAllAncestors = (parentIds: string[]) => {
+          parentIds.forEach(parentId => {
+            newSelected.add(parentId)
+            // Find this parent and add its parents too
+            const parent = allFilters.find(f => f.id === parentId)
+            if (parent?.parentIds && parent.parentIds.length > 0) {
+              addAllAncestors(parent.parentIds)
+            }
+          })
+        }
+        addAllAncestors(filter.parentIds)
+      }
     }
     setSelectedFilterIds(newSelected)
   }
@@ -194,7 +250,7 @@ export default function AdvancedFilterDialog({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {currentLevelFilters.map((filter) => {
-                const hasChildren = allFilters.some(f => f.parentId === filter.id)
+                const hasChildren = allFilters.some(f => f.parentIds.includes(filter.id))
                 const isSelected = selectedFilterIds.has(filter.id)
                 const count = productCounts[filter.id]
 

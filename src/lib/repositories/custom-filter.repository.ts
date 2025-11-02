@@ -228,6 +228,44 @@ export async function getAllFiltersTree(session: Session): Promise<CustomFilterW
 }
 
 /**
+ * Extended filter interface with multiple parent IDs
+ */
+export interface CustomFilterExtended extends CustomFilter {
+  parentIds: string[]
+}
+
+/**
+ * Get all filters as a flat list with all parent IDs
+ */
+export async function getAllFiltersWithParents(session: Session): Promise<CustomFilterExtended[]> {
+  const query = `
+    MATCH (f:CustomFilter)
+    OPTIONAL MATCH (f)-[:CHILD_OF]->(p:CustomFilter)
+    WITH f, collect(p.id) as parentIds
+    RETURN f, parentIds
+    ORDER BY f.level, f.name
+  `
+
+  const result = await session.run(query)
+  return result.records.map((record) => {
+    const node = record.get('f').properties
+    const parentIds = record.get('parentIds').filter((id: any) => id !== null)
+    return {
+      id: node.id,
+      name: node.name,
+      slug: node.slug,
+      parentId: parentIds.length > 0 ? parentIds[0] : null, // Keep first parent for backward compatibility
+      parentIds: parentIds,
+      level: typeof node.level === 'number' ? node.level : node.level.toNumber(),
+      isActive: node.isActive,
+      isFeatured: node.isFeatured || false,
+      createdAt: node.createdAt.toString(),
+      updatedAt: node.updatedAt.toString(),
+    }
+  })
+}
+
+/**
  * Get all filters as a flat list
  */
 export async function getAllFilters(session: Session): Promise<CustomFilter[]> {
@@ -306,7 +344,7 @@ export async function updateFilterParents(
   // Validate no cycles would be created
   const validation = await validateNoCycles(session, filterId, newParentIds)
   if (!validation.valid) {
-    return validation
+    return { success: false, error: validation.error, conflictingParent: validation.conflictingParent }
   }
 
   // Remove all existing parent relationships
@@ -412,7 +450,7 @@ export async function deleteCustomFilter(
 
   // Check if filter has products
   const productsCheck = await session.run(
-    'MATCH (f:CustomFilter {id: $filterId})<-[:TAGGED_WITH]-(p:Product) RETURN count(p) as productCount',
+    'MATCH (f:CustomFilter {id: $filterId})<-[:HAS_FILTER]-(p:Product) RETURN count(p) as productCount',
     { filterId }
   )
 
@@ -441,7 +479,7 @@ export async function tagProductWithFilters(
 ): Promise<void> {
   // Remove existing tags
   await session.run(
-    'MATCH (p:Product {id: $productId})-[r:TAGGED_WITH]->() DELETE r',
+    'MATCH (p:Product {id: $productId})-[r:HAS_FILTER]->() DELETE r',
     { productId }
   )
 
@@ -451,7 +489,7 @@ export async function tagProductWithFilters(
       MATCH (p:Product {id: $productId})
       UNWIND $filterIds as filterId
       MATCH (f:CustomFilter {id: filterId})
-      CREATE (p)-[:TAGGED_WITH]->(f)
+      CREATE (p)-[:HAS_FILTER]->(f)
     `
     await session.run(query, { productId, filterIds })
   }
@@ -465,7 +503,7 @@ export async function getProductFilters(
   productId: string
 ): Promise<CustomFilter[]> {
   const query = `
-    MATCH (p:Product {id: $productId})-[:TAGGED_WITH]->(f:CustomFilter)
+    MATCH (p:Product {id: $productId})-[:HAS_FILTER]->(f:CustomFilter)
     OPTIONAL MATCH (f)-[:CHILD_OF]->(parent:CustomFilter)
     RETURN f, parent.id as parentId
     ORDER BY f.level, f.name
@@ -553,12 +591,12 @@ export async function getProductsByFilter(
     query = `
       MATCH (f:CustomFilter {id: $filterId})
       MATCH path = (f)<-[:CHILD_OF*0..]-(descendant:CustomFilter)
-      MATCH (p:Product)-[:TAGGED_WITH]->(descendant)
+      MATCH (p:Product)-[:HAS_FILTER]->(descendant)
       RETURN DISTINCT p.id as productId
     `
   } else {
     query = `
-      MATCH (p:Product)-[:TAGGED_WITH]->(f:CustomFilter {id: $filterId})
+      MATCH (p:Product)-[:HAS_FILTER]->(f:CustomFilter {id: $filterId})
       RETURN p.id as productId
     `
   }
@@ -700,6 +738,7 @@ export async function updateFilterFeaturedStatus(
     MATCH (f:CustomFilter {id: $filterId})
     SET f.isFeatured = $isFeatured,
         f.updatedAt = datetime().epochMillis
+    WITH f
     OPTIONAL MATCH (f)-[:CHILD_OF]->(p:CustomFilter)
     RETURN f, p.id as parentId
   `
@@ -766,12 +805,12 @@ export async function getProductCountByFilter(
     query = `
       MATCH (f:CustomFilter {id: $filterId})
       MATCH path = (f)<-[:CHILD_OF*0..]-(descendant:CustomFilter)
-      MATCH (p:Product)-[:TAGGED_WITH]->(descendant)
+      MATCH (p:Product)-[:HAS_FILTER]->(descendant)
       RETURN count(DISTINCT p) as productCount
     `
   } else {
     query = `
-      MATCH (p:Product)-[:TAGGED_WITH]->(f:CustomFilter {id: $filterId})
+      MATCH (p:Product)-[:HAS_FILTER]->(f:CustomFilter {id: $filterId})
       RETURN count(p) as productCount
     `
   }
@@ -796,7 +835,7 @@ export async function getProductCountsForFilters(
     UNWIND $filterIds as filterId
     MATCH (f:CustomFilter {id: filterId})
     MATCH path = (f)<-[:CHILD_OF*0..]-(descendant:CustomFilter)
-    MATCH (p:Product)-[:TAGGED_WITH]->(descendant)
+    MATCH (p:Product)-[:HAS_FILTER]->(descendant)
     WITH filterId, count(DISTINCT p) as productCount
     RETURN filterId, productCount
   `
@@ -819,4 +858,310 @@ export async function getProductCountsForFilters(
   })
 
   return countsMap
+}
+
+/**
+ * Auto-assign a product to all ancestor filters
+ * Finds all direct filters a product is tagged with and creates HAS_FILTER
+ * relationships to all ancestors with auto_assigned: true property
+ *
+ * @param session Neo4j session
+ * @param productId Product ID to auto-assign ancestors for
+ * @returns Number of ancestor filters assigned
+ */
+export async function autoAssignProductToAncestors(
+  session: Session,
+  productId: string
+): Promise<number> {
+  const query = `
+    MATCH (p:Product {id: $productId})-[direct:HAS_FILTER]->(f:CustomFilter)
+    WHERE direct.auto_assigned = false OR NOT exists(direct.auto_assigned)
+    MATCH (f)-[:CHILD_OF*1..]->(ancestor:CustomFilter)
+    WITH p, ancestor
+    MERGE (p)-[r:HAS_FILTER]->(ancestor)
+    ON CREATE SET r.auto_assigned = true
+    ON MATCH SET r.auto_assigned = true
+    RETURN count(DISTINCT ancestor) as ancestorCount
+  `
+
+  const result = await session.run(query, { productId })
+  const countRaw = result.records[0]?.get('ancestorCount')
+  return typeof countRaw === 'number' ? countRaw : countRaw?.toNumber() || 0
+}
+
+/**
+ * Tag a product with filters (enhanced version with auto-assignment)
+ * Removes existing manual tags, adds new direct tags, and auto-assigns ancestors
+ *
+ * @param session Neo4j session
+ * @param productId Product ID to tag
+ * @param filterIds Array of filter IDs to tag directly
+ * @returns Object with counts of direct and ancestor tags
+ */
+export async function tagProductWithFiltersEnhanced(
+  session: Session,
+  productId: string,
+  filterIds: string[]
+): Promise<{ directTags: number; ancestorTags: number }> {
+  // Remove existing manual tags (keep auto_assigned ones for now)
+  await session.run(
+    `MATCH (p:Product {id: $productId})-[r:HAS_FILTER]->()
+     WHERE r.auto_assigned = false OR NOT exists(r.auto_assigned)
+     DELETE r`,
+    { productId }
+  )
+
+  // Add new direct tags with auto_assigned: false
+  let directCount = 0
+  if (filterIds.length > 0) {
+    const directQuery = `
+      MATCH (p:Product {id: $productId})
+      UNWIND $filterIds as filterId
+      MATCH (f:CustomFilter {id: filterId})
+      CREATE (p)-[r:HAS_FILTER {auto_assigned: false}]->(f)
+      RETURN count(r) as directCount
+    `
+    const result = await session.run(directQuery, { productId, filterIds })
+    const countRaw = result.records[0]?.get('directCount')
+    directCount = typeof countRaw === 'number' ? countRaw : countRaw?.toNumber() || 0
+  }
+
+  // Remove all auto-assigned tags before recalculating
+  await session.run(
+    `MATCH (p:Product {id: $productId})-[r:HAS_FILTER]->()
+     WHERE r.auto_assigned = true
+     DELETE r`,
+    { productId }
+  )
+
+  // Auto-assign ancestors
+  const ancestorCount = await autoAssignProductToAncestors(session, productId)
+
+  return {
+    directTags: directCount,
+    ancestorTags: ancestorCount
+  }
+}
+
+/**
+ * Get comprehensive filter hierarchy statistics
+ *
+ * @param session Neo4j session
+ * @returns Object with hierarchy statistics
+ */
+export async function getFilterStatistics(
+  session: Session
+): Promise<{
+  totalFilters: number
+  rootFilters: number
+  maxLevel: number
+  avgChildrenPerFilter: number
+  filtersWithProducts: number
+}> {
+  // Get total filters
+  const totalResult = await session.run(
+    'MATCH (f:CustomFilter) RETURN count(f) as total'
+  )
+  const totalRaw = totalResult.records[0]?.get('total')
+  const totalFilters = typeof totalRaw === 'number' ? totalRaw : totalRaw?.toNumber() || 0
+
+  // Get root filters (no CHILD_OF relationships)
+  const rootResult = await session.run(
+    'MATCH (f:CustomFilter) WHERE NOT (f)-[:CHILD_OF]->() RETURN count(f) as rootCount'
+  )
+  const rootRaw = rootResult.records[0]?.get('rootCount')
+  const rootFilters = typeof rootRaw === 'number' ? rootRaw : rootRaw?.toNumber() || 0
+
+  // Get max level
+  const levelResult = await session.run(
+    'MATCH (f:CustomFilter) RETURN max(f.level) as maxLevel'
+  )
+  const levelRaw = levelResult.records[0]?.get('maxLevel')
+  const maxLevel = typeof levelRaw === 'number' ? levelRaw : levelRaw?.toNumber() || 0
+
+  // Get average children per filter
+  const avgResult = await session.run(`
+    MATCH (f:CustomFilter)
+    OPTIONAL MATCH (f)<-[:CHILD_OF]-(child:CustomFilter)
+    WITH f, count(child) as childCount
+    RETURN avg(childCount) as avgChildren
+  `)
+  const avgRaw = avgResult.records[0]?.get('avgChildren')
+  const avgChildrenPerFilter = typeof avgRaw === 'number'
+    ? avgRaw
+    : avgRaw?.toNumber() || 0
+
+  // Get filters with products
+  const productsResult = await session.run(`
+    MATCH (f:CustomFilter)<-[:HAS_FILTER]-(:Product)
+    RETURN count(DISTINCT f) as filtersWithProducts
+  `)
+  const productsRaw = productsResult.records[0]?.get('filtersWithProducts')
+  const filtersWithProducts = typeof productsRaw === 'number'
+    ? productsRaw
+    : productsRaw?.toNumber() || 0
+
+  return {
+    totalFilters,
+    rootFilters,
+    maxLevel,
+    avgChildrenPerFilter: Math.round(avgChildrenPerFilter * 100) / 100, // Round to 2 decimals
+    filtersWithProducts
+  }
+}
+
+/**
+ * Find filters with duplicate names
+ * Groups filters by name and returns only those with count > 1
+ *
+ * @param session Neo4j session
+ * @returns Array of duplicate name groups with IDs and counts
+ */
+export async function findDuplicateFilterNames(
+  session: Session
+): Promise<Array<{ name: string; count: number; ids: string[] }>> {
+  const query = `
+    MATCH (f:CustomFilter)
+    WITH f.name as name, collect(f.id) as ids, count(f) as count
+    WHERE count > 1
+    RETURN name, count, ids
+    ORDER BY count DESC, name
+  `
+
+  const result = await session.run(query)
+  return result.records.map((record) => {
+    const countRaw = record.get('count')
+    return {
+      name: record.get('name'),
+      count: typeof countRaw === 'number' ? countRaw : countRaw.toNumber(),
+      ids: record.get('ids')
+    }
+  })
+}
+
+/**
+ * Merge duplicate filters into one
+ * Reassigns all relationships from removeIds to keepId, then deletes duplicates
+ *
+ * @param session Neo4j session
+ * @param keepId ID of the filter to keep
+ * @param removeIds Array of filter IDs to remove (merge into keepId)
+ * @returns Object with counts of merged filters and reassigned products
+ */
+export async function mergeDuplicateFilters(
+  session: Session,
+  keepId: string,
+  removeIds: string[]
+): Promise<{ mergedCount: number; reassignedProducts: number }> {
+  if (removeIds.length === 0) {
+    return { mergedCount: 0, reassignedProducts: 0 }
+  }
+
+  // Reassign all HAS_FILTER relationships from duplicates to keepId
+  const productQuery = `
+    MATCH (p:Product)-[r:HAS_FILTER]->(duplicate:CustomFilter)
+    WHERE duplicate.id IN $removeIds
+    MATCH (keep:CustomFilter {id: $keepId})
+    WITH p, keep, r, duplicate
+    MERGE (p)-[newR:HAS_FILTER]->(keep)
+    ON CREATE SET newR.auto_assigned = COALESCE(r.auto_assigned, false)
+    DELETE r
+    RETURN count(DISTINCT p) as productCount
+  `
+  const productResult = await session.run(productQuery, { keepId, removeIds })
+  const productCountRaw = productResult.records[0]?.get('productCount')
+  const reassignedProducts = typeof productCountRaw === 'number'
+    ? productCountRaw
+    : productCountRaw?.toNumber() || 0
+
+  // Transfer CHILD_OF relationships from duplicates to keepId
+  const childQuery = `
+    MATCH (child:CustomFilter)-[r:CHILD_OF]->(duplicate:CustomFilter)
+    WHERE duplicate.id IN $removeIds
+    MATCH (keep:CustomFilter {id: $keepId})
+    WITH child, keep, r
+    MERGE (child)-[:CHILD_OF]->(keep)
+    DELETE r
+  `
+  await session.run(childQuery, { keepId, removeIds })
+
+  // Transfer parent CHILD_OF relationships from duplicates to keepId
+  const parentQuery = `
+    MATCH (duplicate:CustomFilter)-[r:CHILD_OF]->(parent:CustomFilter)
+    WHERE duplicate.id IN $removeIds
+    MATCH (keep:CustomFilter {id: $keepId})
+    WITH keep, parent, r
+    MERGE (keep)-[:CHILD_OF]->(parent)
+    DELETE r
+  `
+  await session.run(parentQuery, { keepId, removeIds })
+
+  // Delete the duplicate filters
+  const deleteQuery = `
+    MATCH (duplicate:CustomFilter)
+    WHERE duplicate.id IN $removeIds
+    DETACH DELETE duplicate
+    RETURN count(duplicate) as deletedCount
+  `
+  const deleteResult = await session.run(deleteQuery, { removeIds })
+  const deletedCountRaw = deleteResult.records[0]?.get('deletedCount')
+  const mergedCount = typeof deletedCountRaw === 'number'
+    ? deletedCountRaw
+    : deletedCountRaw?.toNumber() || 0
+
+  return {
+    mergedCount,
+    reassignedProducts
+  }
+}
+
+/**
+ * Manual level recalculation fallback
+ * Iteratively updates filter levels based on parent relationships
+ *
+ * @param session Neo4j session
+ * @returns Total number of level updates performed
+ */
+export async function recalculateAllLevelsManual(
+  session: Session
+): Promise<number> {
+  let totalUpdates = 0
+  const maxIterations = 20
+
+  // Set root levels to 0
+  const rootQuery = `
+    MATCH (f:CustomFilter)
+    WHERE NOT (f)-[:CHILD_OF]->()
+    SET f.level = 0
+    RETURN count(f) as rootCount
+  `
+  const rootResult = await session.run(rootQuery)
+  const rootCountRaw = rootResult.records[0]?.get('rootCount')
+  totalUpdates += typeof rootCountRaw === 'number' ? rootCountRaw : rootCountRaw?.toNumber() || 0
+
+  // Iteratively update children levels
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    const updateQuery = `
+      MATCH (child:CustomFilter)-[:CHILD_OF]->(parent:CustomFilter)
+      WHERE child.level <> parent.level + 1
+      WITH child, max(parent.level) as maxParentLevel
+      SET child.level = maxParentLevel + 1
+      RETURN count(child) as updatedCount
+    `
+
+    const result = await session.run(updateQuery)
+    const updatedCountRaw = result.records[0]?.get('updatedCount')
+    const updatedCount = typeof updatedCountRaw === 'number'
+      ? updatedCountRaw
+      : updatedCountRaw?.toNumber() || 0
+
+    totalUpdates += updatedCount
+
+    // If no updates in this iteration, we're done
+    if (updatedCount === 0) {
+      break
+    }
+  }
+
+  return totalUpdates
 }

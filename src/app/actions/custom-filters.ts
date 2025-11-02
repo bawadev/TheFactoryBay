@@ -98,6 +98,23 @@ export async function getAllFiltersAction() {
 }
 
 /**
+ * Get all filters with all their parent IDs (for multi-parent support)
+ */
+export async function getAllFiltersWithParentsAction() {
+  const session = getSession()
+
+  try {
+    const filters = await filterRepo.getAllFiltersWithParents(session)
+    return { success: true, data: filters }
+  } catch (error) {
+    console.error('Error fetching filters with parents:', error)
+    return { success: false, error: 'Failed to fetch filters' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
  * Update a filter
  */
 export async function updateCustomFilterAction(
@@ -280,7 +297,7 @@ export async function getProductsByFiltersAction(filterIds: string[]) {
 
     // Get products that match ANY of the selected filters
     const query = `
-      MATCH (p:Product)-[:TAGGED_WITH]->(f:CustomFilter)
+      MATCH (p:Product)-[:HAS_FILTER]->(f:CustomFilter)
       WHERE f.id IN $filterIds
       RETURN DISTINCT p.id as productId
     `
@@ -291,6 +308,49 @@ export async function getProductsByFiltersAction(filterIds: string[]) {
     return { success: true, data: productIds }
   } catch (error) {
     console.error('Error fetching products by filters:', error)
+    return { success: false, error: 'Failed to fetch products' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Get full product details by multiple filter IDs (includes descendants)
+ */
+export async function getFullProductsByFiltersAction(filterIds: string[]) {
+  const session = getSession()
+
+  try {
+    if (filterIds.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    // Get products with their variants that match ANY of the selected filters
+    // OR their descendant filters (to support parent filter selection)
+    const query = `
+      MATCH (f:CustomFilter)
+      WHERE f.id IN $filterIds
+      WITH f
+      // Get all descendants of selected filters (0 or more levels deep)
+      OPTIONAL MATCH (descendant:CustomFilter)-[:CHILD_OF*0..]->(f)
+      WITH collect(DISTINCT descendant.id) + collect(DISTINCT f.id) as allFilterIds
+      UNWIND allFilterIds as filterId
+      // Get products that match any of these filters
+      MATCH (p:Product)-[:HAS_FILTER]->(filter:CustomFilter {id: filterId})
+      WITH DISTINCT p
+      OPTIONAL MATCH (v:ProductVariant)-[:VARIANT_OF]->(p)
+      WITH p, collect(v {.*}) as variants
+      RETURN p {.*, variants: variants}
+      ORDER BY p.createdAt DESC
+      LIMIT 50
+    `
+
+    const result = await session.run(query, { filterIds })
+    const products = result.records.map((record) => record.get('p'))
+
+    return { success: true, data: products }
+  } catch (error) {
+    console.error('Error fetching full products by filters:', error)
     return { success: false, error: 'Failed to fetch products' }
   } finally {
     await session.close()
@@ -442,6 +502,168 @@ export async function getProductCountByFilterAction(
   } catch (error) {
     console.error('Error fetching product count:', error)
     return { success: false, error: 'Failed to fetch product count' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Validate filter hierarchy for cycles and level consistency
+ */
+export async function validateFilterHierarchyAction() {
+  const session = getSession()
+
+  try {
+    const adminAccess = await isAdmin()
+    if (!adminAccess) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const issues: Array<{
+      filterId: string
+      filterName: string
+      severity: 'error' | 'warning'
+      message: string
+    }> = []
+
+    // Get all filters with their parent relationships
+    const allFilters = await filterRepo.getAllFiltersWithParents(session)
+    const totalFilters = allFilters.length
+
+    // Check for cycles
+    for (const filter of allFilters) {
+      if (filter.parentIds && filter.parentIds.length > 0) {
+        for (const parentId of filter.parentIds) {
+          // Check if this parent is a descendant of the current filter
+          const cycleCheckQuery = `
+            MATCH (child:CustomFilter {id: $childId})
+            MATCH (parent:CustomFilter {id: $parentId})
+            OPTIONAL MATCH path = (parent)-[:CHILD_OF*1..]->(child)
+            RETURN path IS NOT NULL as hasCycle
+          `
+          const result = await session.run(cycleCheckQuery, {
+            childId: filter.id,
+            parentId,
+          })
+
+          if (result.records[0]?.get('hasCycle')) {
+            issues.push({
+              filterId: filter.id,
+              filterName: filter.name,
+              severity: 'error',
+              message: `Circular reference detected with parent filter`,
+            })
+          }
+        }
+      }
+    }
+
+    // Check for level consistency
+    for (const filter of allFilters) {
+      if (filter.parentIds && filter.parentIds.length > 0) {
+        // Get max parent level
+        const parentLevelsQuery = `
+          MATCH (f:CustomFilter {id: $filterId})-[:CHILD_OF]->(p:CustomFilter)
+          RETURN max(p.level) as maxParentLevel
+        `
+        const result = await session.run(parentLevelsQuery, { filterId: filter.id })
+        const maxParentLevelRaw = result.records[0]?.get('maxParentLevel')
+        const maxParentLevel = typeof maxParentLevelRaw === 'number'
+          ? maxParentLevelRaw
+          : maxParentLevelRaw?.toNumber()
+
+        const expectedLevel = (maxParentLevel ?? -1) + 1
+
+        if (filter.level !== expectedLevel) {
+          issues.push({
+            filterId: filter.id,
+            filterName: filter.name,
+            severity: 'warning',
+            message: `Level mismatch: has level ${filter.level} but should be ${expectedLevel}`,
+          })
+        }
+      } else {
+        // Root filter should have level 0
+        if (filter.level !== 0) {
+          issues.push({
+            filterId: filter.id,
+            filterName: filter.name,
+            severity: 'warning',
+            message: `Root filter should have level 0 but has level ${filter.level}`,
+          })
+        }
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        valid: issues.length === 0,
+        issues,
+        totalFilters,
+        checkedCount: totalFilters,
+      },
+    }
+  } catch (error) {
+    console.error('Error validating filter hierarchy:', error)
+    return { success: false, error: 'Failed to validate hierarchy' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Recalculate all filter levels based on parent relationships
+ */
+export async function recalculateFilterLevelsAction() {
+  const session = getSession()
+
+  try {
+    const adminAccess = await isAdmin()
+    if (!adminAccess) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Start with root filters (no parents) and set their level to 0
+    await session.run(`
+      MATCH (f:CustomFilter)
+      WHERE NOT (f)-[:CHILD_OF]->()
+      SET f.level = 0
+    `)
+
+    // Iteratively update levels for filters based on their parents
+    // Continue until no more updates are made
+    let updated = true
+    let iterations = 0
+    const maxIterations = 100 // Prevent infinite loops
+
+    while (updated && iterations < maxIterations) {
+      const result = await session.run(`
+        MATCH (f:CustomFilter)-[:CHILD_OF]->(p:CustomFilter)
+        WITH f, max(p.level) as maxParentLevel
+        WHERE f.level <> maxParentLevel + 1
+        SET f.level = maxParentLevel + 1
+        RETURN count(f) as updatedCount
+      `)
+
+      const updatedCountRaw = result.records[0]?.get('updatedCount')
+      const updatedCount = typeof updatedCountRaw === 'number'
+        ? updatedCountRaw
+        : updatedCountRaw?.toNumber()
+
+      updated = updatedCount > 0
+      iterations++
+    }
+
+    return {
+      success: true,
+      data: {
+        message: `Recalculated levels in ${iterations} iteration${iterations !== 1 ? 's' : ''}`
+      }
+    }
+  } catch (error) {
+    console.error('Error recalculating filter levels:', error)
+    return { success: false, error: 'Failed to recalculate levels' }
   } finally {
     await session.close()
   }

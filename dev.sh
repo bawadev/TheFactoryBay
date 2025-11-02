@@ -1,0 +1,320 @@
+#!/bin/bash
+
+# Factory Bay Development Environment Manager
+# This script manages Neo4j, MinIO, and Next.js development server
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored messages
+print_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to check if Docker is running
+check_docker() {
+    if ! docker info > /dev/null 2>&1; then
+        print_error "Docker is not running. Please start Docker first."
+        exit 1
+    fi
+}
+
+# Function to start all services
+start_services() {
+    print_info "Starting Factory Bay development environment..."
+
+    # Check Docker
+    check_docker
+
+    # Start Neo4j and MinIO with Docker Compose
+    print_info "Starting Neo4j and MinIO containers..."
+
+    # Check if containers exist and are stopped
+    if docker ps -a --format '{{.Names}}' | grep -q "factory-bay-neo4j"; then
+        # Containers exist, just start them
+        docker start factory-bay-neo4j factory-bay-minio 2>/dev/null || true
+    else
+        # Containers don't exist, create them
+        docker compose up -d
+    fi
+
+    # Wait for Neo4j to be ready
+    print_info "Waiting for Neo4j to be ready..."
+    sleep 5
+
+    # Check if Neo4j is accessible
+    for i in {1..30}; do
+        if nc -z localhost 7687 2>/dev/null; then
+            print_success "Neo4j is ready on port 7687"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            print_error "Neo4j failed to start within 30 seconds"
+            exit 1
+        fi
+        sleep 1
+    done
+
+    # Check MinIO
+    if docker ps | grep -q factory-bay-minio; then
+        print_success "MinIO is running on port 9000 (API) and 9001 (Console)"
+    else
+        print_warning "MinIO container not running"
+    fi
+
+    # Start Next.js dev server in background
+    print_info "Starting Next.js development server..."
+    npm run dev > .dev-server.log 2>&1 &
+    DEV_SERVER_PID=$!
+    echo $DEV_SERVER_PID > .dev-server.pid
+
+    # Wait for Next.js to be ready
+    print_info "Waiting for Next.js server to be ready..."
+    for i in {1..30}; do
+        if curl -s http://localhost:3000 > /dev/null 2>&1; then
+            print_success "Next.js development server is ready on http://localhost:3000"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            print_error "Next.js server failed to start within 30 seconds"
+            print_info "Check .dev-server.log for details"
+            exit 1
+        fi
+        sleep 1
+    done
+
+    echo ""
+    print_success "All services started successfully!"
+    echo ""
+    print_info "Services:"
+    echo "  - Next.js:      http://localhost:3000"
+    echo "  - Neo4j Browser: http://localhost:7474 (neo4j/factorybay123)"
+    echo "  - MinIO Console: http://localhost:9001 (factorybay/factorybay123)"
+    echo ""
+    print_info "Logs:"
+    echo "  - Next.js: tail -f .dev-server.log"
+    echo "  - Neo4j:   docker logs -f factory-bay-neo4j"
+    echo "  - MinIO:   docker logs -f factory-bay-minio"
+    echo ""
+}
+
+# Function to stop all services
+stop_services() {
+    print_info "Stopping Factory Bay development environment..."
+
+    # Stop Next.js dev server
+    if [ -f .dev-server.pid ]; then
+        DEV_SERVER_PID=$(cat .dev-server.pid)
+        if ps -p $DEV_SERVER_PID > /dev/null 2>&1; then
+            print_info "Stopping Next.js development server (PID: $DEV_SERVER_PID)..."
+            kill $DEV_SERVER_PID 2>/dev/null || true
+            # Wait for graceful shutdown
+            sleep 2
+            # Force kill if still running
+            if ps -p $DEV_SERVER_PID > /dev/null 2>&1; then
+                kill -9 $DEV_SERVER_PID 2>/dev/null || true
+            fi
+            print_success "Next.js server stopped"
+        fi
+        rm -f .dev-server.pid
+    else
+        print_warning "Next.js dev server PID file not found"
+        # Try to find and kill any running npm dev process
+        pkill -f "next dev" 2>/dev/null && print_success "Killed running Next.js processes" || true
+    fi
+
+    # Stop Docker containers
+    print_info "Stopping Neo4j and MinIO containers..."
+    docker compose stop
+    print_success "Containers stopped"
+
+    # Clean up log file
+    rm -f .dev-server.log
+
+    print_success "All services stopped successfully!"
+}
+
+# Function to restart all services
+restart_services() {
+    print_info "Restarting Factory Bay development environment..."
+    stop_services
+    sleep 2
+    start_services
+}
+
+# Function to show status of all services
+status_services() {
+    print_info "Factory Bay Development Environment Status"
+    echo ""
+
+    # Check Docker
+    if ! docker info > /dev/null 2>&1; then
+        print_error "Docker is not running"
+    else
+        print_success "Docker is running"
+    fi
+
+    echo ""
+    print_info "Docker Containers:"
+    docker ps -a --filter "name=factory-bay" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+    echo ""
+    print_info "Next.js Development Server:"
+    if [ -f .dev-server.pid ]; then
+        DEV_SERVER_PID=$(cat .dev-server.pid)
+        if ps -p $DEV_SERVER_PID > /dev/null 2>&1; then
+            print_success "Running (PID: $DEV_SERVER_PID)"
+            if nc -z localhost 3000 2>/dev/null; then
+                echo "  URL: http://localhost:3000"
+            fi
+        else
+            print_error "Not running (stale PID file)"
+        fi
+    else
+        if pgrep -f "next dev" > /dev/null 2>&1; then
+            print_warning "Running (but PID file missing)"
+            echo "  PID: $(pgrep -f 'next dev')"
+        else
+            print_error "Not running"
+        fi
+    fi
+
+    echo ""
+    print_info "Port Status:"
+    echo -n "  Neo4j (7687):  "
+    if nc -z localhost 7687 2>/dev/null; then
+        print_success "LISTENING"
+    else
+        print_error "NOT LISTENING"
+    fi
+
+    echo -n "  Neo4j HTTP (7474): "
+    if nc -z localhost 7474 2>/dev/null; then
+        print_success "LISTENING"
+    else
+        print_error "NOT LISTENING"
+    fi
+
+    echo -n "  MinIO API (9000):  "
+    if nc -z localhost 9000 2>/dev/null; then
+        print_success "LISTENING"
+    else
+        print_error "NOT LISTENING"
+    fi
+
+    echo -n "  MinIO Console (9001): "
+    if nc -z localhost 9001 2>/dev/null; then
+        print_success "LISTENING"
+    else
+        print_error "NOT LISTENING"
+    fi
+
+    echo -n "  Next.js (3000): "
+    if nc -z localhost 3000 2>/dev/null; then
+        print_success "LISTENING"
+    else
+        print_error "NOT LISTENING"
+    fi
+    echo ""
+}
+
+# Function to show logs
+logs_services() {
+    SERVICE=${1:-""}
+
+    if [ -z "$SERVICE" ]; then
+        print_info "Available logs: nextjs, neo4j, minio"
+        print_info "Usage: $0 logs <service>"
+        exit 1
+    fi
+
+    case $SERVICE in
+        nextjs|next)
+            if [ -f .dev-server.log ]; then
+                tail -f .dev-server.log
+            else
+                print_error "Next.js log file not found. Is the server running?"
+                exit 1
+            fi
+            ;;
+        neo4j)
+            docker logs -f factory-bay-neo4j
+            ;;
+        minio)
+            docker logs -f factory-bay-minio
+            ;;
+        *)
+            print_error "Unknown service: $SERVICE"
+            print_info "Available logs: nextjs, neo4j, minio"
+            exit 1
+            ;;
+    esac
+}
+
+# Function to show help
+show_help() {
+    echo "Factory Bay Development Environment Manager"
+    echo ""
+    echo "Usage: $0 [command]"
+    echo ""
+    echo "Commands:"
+    echo "  start      Start all services (Neo4j, MinIO, Next.js)"
+    echo "  stop       Stop all services"
+    echo "  restart    Restart all services"
+    echo "  status     Show status of all services"
+    echo "  logs       Show logs for a specific service"
+    echo "  help       Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0 start"
+    echo "  $0 status"
+    echo "  $0 logs nextjs"
+    echo "  $0 logs neo4j"
+    echo ""
+}
+
+# Main script logic
+case "${1:-}" in
+    start)
+        start_services
+        ;;
+    stop)
+        stop_services
+        ;;
+    restart)
+        restart_services
+        ;;
+    status)
+        status_services
+        ;;
+    logs)
+        logs_services "${2:-}"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        print_error "Invalid command: ${1:-}"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

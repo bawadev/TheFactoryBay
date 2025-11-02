@@ -13,6 +13,7 @@ import AdvancedFilterDialog from '@/components/filters/AdvancedFilterDialog'
 import {
   getFeaturedFiltersAction,
   getProductsByFiltersAction,
+  getFullProductsByFiltersAction,
   getAllChildFilterIdsAction,
   getAllParentFilterIdsAction
 } from '@/app/actions/custom-filters'
@@ -89,6 +90,7 @@ export default function HomePageClient({
   const t = useTranslations('home')
   const [selectedFilterIds, setSelectedFilterIds] = useState<Set<string>>(new Set())
   const [filteredProductIds, setFilteredProductIds] = useState<string[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<ProductWithVariants[]>([])
   const [allFilters, setAllFilters] = useState<CustomFilter[]>([])
   const [showAdvancedDialog, setShowAdvancedDialog] = useState(false)
 
@@ -144,13 +146,21 @@ export default function HomePageClient({
   useEffect(() => {
     if (selectedFilterIds.size > 0) {
       const filterIdsArray = Array.from(selectedFilterIds)
+      // Fetch product IDs for filtering existing sections
       getProductsByFiltersAction(filterIdsArray).then((result) => {
         if (result.success && result.data) {
           setFilteredProductIds(result.data)
         }
       })
+      // Fetch full product objects for dedicated filtered section
+      getFullProductsByFiltersAction(filterIdsArray).then((result) => {
+        if (result.success && result.data) {
+          setFilteredProducts(result.data)
+        }
+      })
     } else {
       setFilteredProductIds([])
+      setFilteredProducts([])
     }
   }, [selectedFilterIds])
 
@@ -380,6 +390,28 @@ export default function HomePageClient({
           </div>
         </div>
       </section>
+
+      {/* Filtered Products Section - Show when filters are active */}
+      {selectedFilterIds.size > 0 && filteredProducts.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Filtered Products</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+              </p>
+            </div>
+            <Link href={`/${locale}/shop`} className="text-sm font-medium text-navy-600 hover:text-navy-700">
+              {t('viewAll')}
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Recently Viewed - Only for authenticated users and if has filtered products */}
       {isAuthenticated && filteredRecentlyViewed.length > 0 && (

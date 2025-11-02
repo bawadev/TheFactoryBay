@@ -14,6 +14,9 @@
     "filters:setup": "tsx scripts/setup-default-filters.ts",
     "filters:assign": "tsx scripts/assign-products-to-filters.ts",
     "filters:init": "tsx scripts/initialize-filter-system.ts",
+    "filters:validate": "tsx scripts/validate-filters.ts",
+    "filters:recalculate": "tsx scripts/recalculate-levels.ts",
+    "filters:seed": "tsx scripts/seed-default-filters.ts",
     "minio:init": "tsx scripts/init-minio.ts"
   },
   "dependencies": {
@@ -29,6 +32,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sharp": "^0.34.4",
+    "sonner": "^2.0.7",
     "uuid": "^13.0.0",
     "zod": "^3.24.1"
   },

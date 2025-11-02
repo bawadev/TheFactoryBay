@@ -41,3 +41,7 @@ next-env.d.ts
 
 # Images (will be uploaded to cloud later)
 /public/images/uploads
+
+# Development script files
+.dev-server.log
+.dev-server.pid

@@ -38,10 +38,12 @@ Factory Bay disrupts traditional retail by offering customers direct access to b
 
 ### Prerequisites
 - Node.js 18+
-- Neo4j database (Docker recommended)
+- Docker (for Neo4j and MinIO)
 - npm or yarn
 
-### Installation
+### Easy Setup (Recommended)
+
+Use the automated development script to manage all services:
 
 1. **Clone and install dependencies:**
    ```bash
@@ -55,12 +57,43 @@ Factory Bay disrupts traditional retail by offering customers direct access to b
    # Edit .env.local with your Neo4j credentials
    ```
 
-3. **Start Neo4j (via Docker):**
+3. **Start all services:**
    ```bash
-   docker run --name factory-bay-neo4j \
-     -p 7474:7474 -p 7687:7687 \
-     -e NEO4J_AUTH=neo4j/factorybay123 \
-     neo4j:latest
+   ./dev.sh start
+   ```
+
+4. **Open http://localhost:3000** 🎉
+
+**Other useful commands:**
+```bash
+./dev.sh status   # Check all services
+./dev.sh stop     # Stop all services
+./dev.sh restart  # Restart all services
+./dev.sh logs nextjs  # View logs
+./dev.sh help     # Show all commands
+```
+
+See **[DEV_SCRIPT_GUIDE.md](./DEV_SCRIPT_GUIDE.md)** for complete documentation.
+
+### Manual Setup (Alternative)
+
+If you prefer to start services manually:
+
+1. **Clone and install dependencies:**
+   ```bash
+   cd /home/bawa/work/TheFactoryBay
+   npm install
+   ```
+
+2. **Set up environment variables:**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your Neo4j credentials
+   ```
+
+3. **Start Docker containers:**
+   ```bash
+   docker compose up -d
    ```
 
 4. **Initialize database:**
@@ -79,6 +112,7 @@ Factory Bay disrupts traditional retail by offering customers direct access to b
 
 ## 📚 Documentation
 
+- **[DEV_SCRIPT_GUIDE.md](./DEV_SCRIPT_GUIDE.md)** - Development environment script guide
 - **[SPECIFICATION.md](./SPECIFICATION.md)** - Complete technical specification
 - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** - Design system and component specs
 - **[SETUP.md](./SETUP.md)** - Detailed setup instructions

@@ -28,6 +28,24 @@ This guide explains how to access Factory Bay as a regular customer user, includ
 
 ## Test User Accounts
 
+### Admin Test Account
+
+For testing admin functionality:
+
+| Email | Password | Role | Access |
+|-------|----------|------|--------|
+| `testadmin@factorybay.com` | `Admin123!` | ADMIN | Full admin panel access |
+
+**Admin Panel URL:** http://localhost:3000/en/admin
+
+**Admin Features:**
+- Product Management
+- Order Management
+- Inventory Control
+- Category Management (Ladies/Gents/Kids hierarchies)
+- Promotional Categories
+- User Management
+
 ### Existing Customer Accounts in Database
 
 The following customer accounts currently exist in your database:
@@ -253,6 +271,15 @@ Cart:            http://localhost:3000/en/cart
 Checkout:        http://localhost:3000/en/checkout
 Orders:          http://localhost:3000/en/orders
 Profile:         http://localhost:3000/en/profile
+```
+
+### Admin URLs
+```
+Admin Panel:     http://localhost:3000/en/admin
+Products:        http://localhost:3000/en/admin/products
+Orders:          http://localhost:3000/en/admin/orders
+Categories:      http://localhost:3000/en/admin/categories
+Promo Sections:  http://localhost:3000/en/admin/sections
 ```
 
 ### Recommended Test Workflow
