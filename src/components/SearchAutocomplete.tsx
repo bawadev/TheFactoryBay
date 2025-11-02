@@ -166,7 +166,7 @@ export default function SearchAutocomplete({
 
       {isOpen && !isLoading && query.trim().length >= 2 && results.length === 0 && (
         <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 text-center text-gray-500">
-          No products found for "{query}"
+          No products found for &quot;{query}&quot;
         </div>
       )}
     </div>

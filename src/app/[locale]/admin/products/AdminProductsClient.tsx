@@ -28,6 +28,7 @@ import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { ProductCategory, ProductGender, Product, PromotionalCategory } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import CategoryPickerDialog from '@/components/category/CategoryPickerDialog'
+import FilterPickerDialog from '@/components/filters/FilterPickerDialog'
 
 interface AdminProductsClientProps {
   products: ProductWithVariants[]
@@ -1367,7 +1368,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                 </div>
               ) : (
                 <div className="text-center py-6 text-sm text-gray-500 italic">
-                  No variants added yet. Click "+ Add Variant" to create one.
+                  No variants added yet. Click &quot;+ Add Variant&quot; to create one.
                 </div>
               )}
             </div>
@@ -1656,7 +1657,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Add to Homepage Sections</h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  Assign "{selectedProductForSection.name}" to promotional sections
+                  Assign &quot;{selectedProductForSection.name}&quot; to promotional sections
                 </p>
               </div>
               <button

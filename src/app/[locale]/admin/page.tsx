@@ -159,7 +159,7 @@ export default async function AdminDashboardPage() {
               <h2 className="ml-4 text-xl font-semibold text-gray-900">Promotional Sections</h2>
             </div>
             <p className="text-sm text-gray-600">
-              Create and manage promotional sections like "Best Sellers", "New Arrivals", and seasonal offers.
+              Create and manage promotional sections like &quot;Best Sellers&quot;, &quot;New Arrivals&quot;, and seasonal offers.
             </p>
             <div className="mt-4 flex items-center text-sm font-medium text-purple-600 group-hover:text-purple-700">
               Manage Sections
@@ -193,7 +193,7 @@ export default async function AdminDashboardPage() {
               <h2 className="ml-4 text-xl font-semibold text-gray-900">Custom Filters</h2>
             </div>
             <p className="text-sm text-gray-600">
-              Define hierarchical filters to organize products by custom categories like "Office Wares" or "Evening Dresses".
+              Define hierarchical filters to organize products by custom categories like &quot;Office Wares&quot; or &quot;Evening Dresses&quot;.
             </p>
             <div className="mt-4 flex items-center text-sm font-medium text-indigo-600 group-hover:text-indigo-700">
               Manage Filters

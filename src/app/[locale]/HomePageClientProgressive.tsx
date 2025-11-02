@@ -289,7 +289,7 @@ export default function HomePageClientProgressive({
             {/* Subtitle */}
             <p className="text-xl md:text-2xl text-gray-200 mb-10 max-w-2xl mx-auto">
               Discover authentic branded clothing at unbeatable stock prices.
-              Quality fashion shouldn't break the bank.
+              Quality fashion shouldn&apos;t break the bank.
             </p>
 
             {/* Search Bar */}
