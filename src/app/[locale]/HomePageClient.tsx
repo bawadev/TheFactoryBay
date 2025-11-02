@@ -380,8 +380,8 @@ export default function HomePageClient({
             </div>
 
             {/* Main Heading - Display Scale */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight tracking-tight">
-              <span className="block bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent drop-shadow-2xl">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-[1.25] tracking-tight px-4 pb-6 pt-2">
+              <span className="block bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent drop-shadow-2xl" style={{WebkitBoxDecorationBreak: 'clone', boxDecorationBreak: 'clone'}}>
                 {t('hero.title')}
               </span>
             </h1>
