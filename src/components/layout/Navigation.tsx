@@ -11,9 +11,10 @@ import LanguageSwitcher from '@/components/LanguageSwitcher'
 interface NavigationProps {
   isAuthenticated: boolean
   userEmail?: string
+  isAdmin?: boolean
 }
 
-export default function Navigation({ isAuthenticated, userEmail }: NavigationProps) {
+export default function Navigation({ isAuthenticated, userEmail, isAdmin }: NavigationProps) {
   const locale = useLocale()
   const pathname = usePathname()
   const [cartCount, setCartCount] = useState(0)
@@ -84,6 +85,20 @@ export default function Navigation({ isAuthenticated, userEmail }: NavigationPro
               >
                 {t('shop')}
               </Link>
+
+              {/* Admin Dashboard Link */}
+              {isAdmin && (
+                <Link
+                  href={`/${locale}/admin/dashboard`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    pathname.includes('/admin')
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                >
+                  Go to Admin Panel
+                </Link>
+              )}
 
               {/* Cart Icon with Badge */}
               <Link
@@ -258,6 +273,16 @@ export default function Navigation({ isAuthenticated, userEmail }: NavigationPro
               >
                 {t('shop')}
               </Link>
+
+              {/* Admin Dashboard Link (Mobile) */}
+              {isAdmin && (
+                <Link
+                  href={`/${locale}/admin/dashboard`}
+                  className="block px-4 py-3 rounded-lg text-base font-semibold text-center bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                >
+                  Go to Admin Panel
+                </Link>
+              )}
 
               {isAuthenticated ? (
                 <>
