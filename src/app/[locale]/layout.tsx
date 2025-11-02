@@ -50,12 +50,14 @@ export default async function LocaleLayout({
   const token = cookieStore.get('auth_token')
   let isAuthenticated = false
   let userEmail: string | undefined
+  let isAdmin = false
 
   if (token) {
     try {
       const payload = await verifyToken(token.value)
       isAuthenticated = true
       userEmail = payload.email
+      isAdmin = payload.role === 'ADMIN'
     } catch {
       // Token is invalid
       isAuthenticated = false
@@ -66,7 +68,7 @@ export default async function LocaleLayout({
     <html lang={locale} className={inter.variable}>
       <body className="min-h-screen bg-gray-50">
         <NextIntlClientProvider messages={messages}>
-          <Navigation isAuthenticated={isAuthenticated} userEmail={userEmail} />
+          <Navigation isAuthenticated={isAuthenticated} userEmail={userEmail} isAdmin={isAdmin} />
           {children}
         </NextIntlClientProvider>
       </body>

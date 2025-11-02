@@ -31,6 +31,13 @@ export const constraints = [
 
   `CREATE CONSTRAINT order_number_unique IF NOT EXISTS
    FOR (o:Order) REQUIRE o.orderNumber IS UNIQUE`,
+
+  // Category constraints
+  `CREATE CONSTRAINT category_id_unique IF NOT EXISTS
+   FOR (c:Category) REQUIRE c.id IS UNIQUE`,
+
+  // Note: slug is NOT unique - same names can appear in different hierarchies/paths
+  // e.g., Ladies>Clothing>Tops and Gents>Clothing>Tops both have slug="tops"
 ]
 
 // Create indexes for better query performance
@@ -55,6 +62,19 @@ export const indexes = [
 
   `CREATE INDEX order_created_index IF NOT EXISTS
    FOR (o:Order) ON (o.createdAt)`,
+
+  // Category indexes
+  `CREATE INDEX category_hierarchy_index IF NOT EXISTS
+   FOR (c:Category) ON (c.hierarchy)`,
+
+  `CREATE INDEX category_level_index IF NOT EXISTS
+   FOR (c:Category) ON (c.level)`,
+
+  `CREATE INDEX category_featured_index IF NOT EXISTS
+   FOR (c:Category) ON (c.isFeatured)`,
+
+  `CREATE INDEX category_active_index IF NOT EXISTS
+   FOR (c:Category) ON (c.isActive)`,
 ]
 
 /**
