@@ -45,3 +45,10 @@ next-env.d.ts
 # Development script files
 .dev-server.log
 .dev-server.pid
+
+# Playwright MCP test screenshots
+.playwright-mcp/*.png
+.playwright-mcp/.playwright-mcp/
+
+# Development notes
+devnotes.txt
