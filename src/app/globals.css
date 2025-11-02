@@ -54,13 +54,13 @@
   }
 
   .btn-primary {
-    @apply btn bg-coral-600 text-white hover:bg-coral-500 hover:scale-105
-           active:scale-95 focus:ring-coral-300;
+    @apply btn bg-coral-600 text-white hover:bg-coral-500 hover:scale-[1.02]
+           active:scale-[0.98] focus:ring-coral-300;
   }
 
   .btn-secondary {
     @apply btn border-2 border-navy-600 text-navy-600 bg-transparent
-           hover:bg-navy-50 hover:scale-105 active:scale-95 focus:ring-navy-300;
+           hover:bg-navy-50 hover:scale-[1.02] active:scale-[0.98] focus:ring-navy-300;
   }
 
   .btn-ghost {
