@@ -57,7 +57,7 @@ async function seedCategories() {
 
       if (!categoryFilter) {
         console.log(`Creating ${category} under Men...`)
-        categoryFilter = await createCustomFilter(session, category, menFilter.id)
+        categoryFilter = await createCustomFilter(session, category, [menFilter.id])
       } else {
         console.log(`${category} already exists under Men`)
       }
@@ -68,7 +68,7 @@ async function seedCategories() {
         const exists = existingSubcategories.find(f => f.name === subcategory)
         if (!exists) {
           console.log(`  Creating ${subcategory} under ${category}...`)
-          await createCustomFilter(session, subcategory, categoryFilter.id)
+          await createCustomFilter(session, subcategory, [categoryFilter.id])
         } else {
           console.log(`  ${subcategory} already exists under ${category}`)
         }
@@ -84,7 +84,7 @@ async function seedCategories() {
 
       if (!categoryFilter) {
         console.log(`Creating ${category} under Women...`)
-        categoryFilter = await createCustomFilter(session, category, womenFilter.id)
+        categoryFilter = await createCustomFilter(session, category, [womenFilter.id])
       } else {
         console.log(`${category} already exists under Women`)
       }
@@ -95,7 +95,7 @@ async function seedCategories() {
         const exists = existingSubcategories.find(f => f.name === subcategory)
         if (!exists) {
           console.log(`  Creating ${subcategory} under ${category}...`)
-          await createCustomFilter(session, subcategory, categoryFilter.id)
+          await createCustomFilter(session, subcategory, [categoryFilter.id])
         } else {
           console.log(`  ${subcategory} already exists under ${category}`)
         }

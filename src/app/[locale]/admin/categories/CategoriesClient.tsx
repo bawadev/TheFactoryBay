@@ -53,7 +53,7 @@ export default function CategoriesClient() {
   async function loadDuplicates() {
     const result = await findDuplicateNamesAction()
     if (result.success) {
-      setDuplicates(result.data)
+      setDuplicates(result.data || [])
       setShowDuplicates(true)
     }
   }
@@ -134,7 +134,8 @@ export default function CategoriesClient() {
       toast.success('Category deleted')
       loadCategories()
     } else {
-      toast.error(result.message || 'Failed to delete category')
+      const errorMsg = 'message' in result ? result.message : ('error' in result ? result.error : undefined)
+      toast.error(errorMsg || 'Failed to delete category')
     }
   }
 

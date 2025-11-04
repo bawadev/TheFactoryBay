@@ -24,6 +24,7 @@ import {
   getCategoryTreeAction,
   getCategoryByIdAction,
 } from '@/app/actions/categories'
+import { getProductFiltersAction } from '@/app/actions/custom-filters'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { ProductCategory, ProductGender, Product, PromotionalCategory } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
@@ -40,6 +41,7 @@ type FormData = {
   brand: string
   category?: ProductCategory // DEPRECATED: Use categoryIds instead
   categoryIds: string[] // Selected category IDs (leaf categories only)
+  filterIds: string[] // Selected filter IDs for custom filters
   gender: ProductGender
   stockPrice: string
   retailPrice: string
@@ -70,6 +72,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     description: '',
     brand: '',
     categoryIds: [],
+    filterIds: [],
     gender: 'UNISEX',
     stockPrice: '',
     retailPrice: '',
@@ -397,6 +400,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       name: product.name,
       description: product.description,
       brand: product.brand,
+      categoryIds: [],
       filterIds,
       gender: product.gender,
       stockPrice: product.stockPrice.toString(),
@@ -436,6 +440,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       description: '',
       brand: '',
       categoryIds: [],
+      filterIds: [],
       gender: 'UNISEX',
       stockPrice: '',
       retailPrice: '',
@@ -551,7 +556,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         comparison = a.name.localeCompare(b.name)
         break
       case 'category':
-        comparison = a.category.localeCompare(b.category)
+        comparison = (a.category || '').localeCompare(b.category || '')
         break
       case 'price':
         comparison = a.stockPrice - b.stockPrice

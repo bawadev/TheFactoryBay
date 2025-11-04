@@ -4,7 +4,8 @@ import { getNewArrivals } from '@/lib/repositories/recommendation.repository'
 import { getAllPromotionalCategoriesAction, getProductsByCategoryAction } from '@/app/actions/promotional-categories'
 import HomePageClient from './HomePageClient'
 
-export default async function HomePage({ params }: { params: { locale: string } }) {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  await params // Consume the params promise even though we don't need the locale
   const user = await getCurrentUser()
 
   // Fetch data in parallel

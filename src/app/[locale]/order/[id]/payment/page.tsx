@@ -5,8 +5,8 @@ import { getOrderById } from '@/lib/repositories/order.repository'
 import { getTranslations } from 'next-intl/server'
 import PaymentPageClient from './PaymentPageClient'
 
-export default async function PaymentPage({ params }: { params: { id: string } }) {
-  const orderId = params.id
+export default async function PaymentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: orderId } = await params
   const t = await getTranslations('payment')
 
   // Get current user

@@ -146,7 +146,7 @@ export default function HomePageClientProgressive({
     const categoryIds = Array.from(selectedCategoryIds)
     const result = await getFullProductsByCategoriesAction(categoryIds)
     if (result.success) {
-      setFilteredProducts(result.data)
+      setFilteredProducts(result.data || [])
     }
     setLoading(false)
   }
@@ -242,7 +242,7 @@ export default function HomePageClientProgressive({
             className={`${getCategoryChipStyle(category.level)} rounded-full transition-all ${getHierarchyColor(category.hierarchy, isSelected)}`}
           >
             {category.name}
-            {category.productCount > 0 && (
+            {category.productCount !== undefined && category.productCount > 0 && (
               <span className="ml-2 text-xs opacity-75">({category.productCount})</span>
             )}
           </button>

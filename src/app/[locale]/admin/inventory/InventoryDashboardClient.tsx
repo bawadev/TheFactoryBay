@@ -59,7 +59,7 @@ export default function InventoryDashboardClient({ products }: InventoryDashboar
         case 'name':
           return a.name.localeCompare(b.name)
         case 'category':
-          return a.category.localeCompare(b.category)
+          return (a.category || '').localeCompare(b.category || '')
         default:
           return 0
       }

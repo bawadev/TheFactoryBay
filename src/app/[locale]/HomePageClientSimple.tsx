@@ -112,7 +112,7 @@ export default function HomePageClientSimple({
   async function loadFeaturedCategories() {
     const result = await getFeaturedCategoriesAction()
     if (result.success) {
-      setFeaturedCategories(result.data)
+      setFeaturedCategories(result.data || [])
     }
   }
 
@@ -121,7 +121,7 @@ export default function HomePageClientSimple({
     const categoryIds = Array.from(selectedCategoryIds)
     const result = await getFullProductsByCategoriesAction(categoryIds)
     if (result.success) {
-      setFilteredProducts(result.data)
+      setFilteredProducts(result.data || [])
     }
     setLoading(false)
   }
