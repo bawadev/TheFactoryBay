@@ -20,6 +20,7 @@ import {
 } from '@/app/actions/promotional-categories'
 import { searchProductsAction } from '@/app/actions/products'
 import Toast, { ToastType } from '@/components/Toast'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface PromotionalCategoriesClientProps {
   initialCategories: PromotionalCategory[]
@@ -75,6 +76,19 @@ export default function PromotionalCategoriesClient({
   const router = useRouter()
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type, show: true })
   }
@@ -124,21 +138,27 @@ export default function PromotionalCategoriesClient({
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this section?')) return
-
-    setLoading(true)
-    const result = await deletePromotionalCategoryAction(categoryId)
-    if (result.success) {
-      setCategories(categories.filter((c) => c.id !== categoryId))
-      if (selectedCategory === categoryId) {
-        setSelectedCategory(null)
-        setCategoryProducts([])
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Section',
+      message: 'Are you sure you want to delete this section?',
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
+        setLoading(true)
+        const result = await deletePromotionalCategoryAction(categoryId)
+        if (result.success) {
+          setCategories(categories.filter((c) => c.id !== categoryId))
+          if (selectedCategory === categoryId) {
+            setSelectedCategory(null)
+            setCategoryProducts([])
+          }
+          showToast('Section deleted successfully!', 'success')
+        } else {
+          showToast(result.message || 'Failed to delete section', 'error')
+        }
+        setLoading(false)
       }
-      showToast('Section deleted successfully!', 'success')
-    } else {
-      showToast(result.message || 'Failed to delete section', 'error')
-    }
-    setLoading(false)
+    })
   }
 
   const resetForm = () => {
@@ -246,17 +266,25 @@ export default function PromotionalCategoriesClient({
   }
 
   const handleRemoveProduct = async (productId: string) => {
-    if (!selectedCategory || !confirm('Remove this product from the section?')) return
+    if (!selectedCategory) return
 
-    setLoading(true)
-    const result = await removeProductFromCategoryAction(selectedCategory, productId)
-    if (result.success) {
-      await loadCategoryProducts(selectedCategory)
-      showToast('Product removed successfully!', 'success')
-    } else {
-      showToast(result.message || 'Failed to remove product', 'error')
-    }
-    setLoading(false)
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Product',
+      message: 'Remove this product from the section?',
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
+        setLoading(true)
+        const result = await removeProductFromCategoryAction(selectedCategory, productId)
+        if (result.success) {
+          await loadCategoryProducts(selectedCategory)
+          showToast('Product removed successfully!', 'success')
+        } else {
+          showToast(result.message || 'Failed to remove product', 'error')
+        }
+        setLoading(false)
+      }
+    })
   }
 
   const handleStartEditQuantity = (productId: string, currentQuantity: number) => {
@@ -953,6 +981,15 @@ export default function PromotionalCategoriesClient({
       {toast.show && (
         <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   )
 }

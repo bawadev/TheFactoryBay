@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslations, useLocale } from 'next-intl'
 import type { OrderWithItems } from '@/lib/repositories/order.repository'
+import Notification, { type NotificationType } from '@/components/ui/Notification'
 
 interface PaymentPageClientProps {
   order: OrderWithItems
@@ -17,6 +18,26 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean
+    type: NotificationType
+    title: string
+    message?: string
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+  })
+
+  const showNotification = (type: NotificationType, title: string, message?: string) => {
+    setNotification({ isOpen: true, type, title, message })
+  }
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }))
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -38,12 +59,13 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
 
       if (result.success) {
         setUploadSuccess(true)
+        showNotification('success', 'Payment proof uploaded successfully!')
       } else {
-        alert(result.message || 'Failed to upload payment proof')
+        showNotification('error', 'Failed to upload payment proof', result.message || 'Failed to upload payment proof')
       }
     } catch (error) {
       console.error('Upload error:', error)
-      alert('An error occurred while uploading the payment proof')
+      showNotification('error', 'Upload error', 'An error occurred while uploading the payment proof')
     } finally {
       setIsUploading(false)
     }
@@ -51,7 +73,7 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
+    showNotification('success', 'Copied to clipboard!')
   }
 
   return (
@@ -268,6 +290,15 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Notification */}
+      <Notification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+      />
     </div>
   )
 }

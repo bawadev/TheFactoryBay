@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import CartItem from '@/components/cart/CartItem'
 import { getCartItemsAction, clearCartAction } from '@/app/actions/cart'
 import type { CartItemWithDetails } from '@/lib/repositories/cart.repository'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface CartPageClientProps {
   initialItems: CartItemWithDetails[]
@@ -25,6 +26,19 @@ export default function CartPageClient({
   const [itemCount, setItemCount] = useState(initialItemCount)
   const [isClearing, setIsClearing] = useState(false)
 
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
   const refreshCart = async () => {
     const result = await getCartItemsAction()
     if (result.success && result.data) {
@@ -35,18 +49,24 @@ export default function CartPageClient({
   }
 
   const handleClearCart = async () => {
-    if (!confirm(t('clearCartConfirm'))) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Clear Cart',
+      message: t('clearCartConfirm'),
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
+        setIsClearing(true)
+        const result = await clearCartAction()
 
-    setIsClearing(true)
-    const result = await clearCartAction()
+        if (result.success) {
+          setItems([])
+          setTotal(0)
+          setItemCount(0)
+        }
 
-    if (result.success) {
-      setItems([])
-      setTotal(0)
-      setItemCount(0)
-    }
-
-    setIsClearing(false)
+        setIsClearing(false)
+      }
+    })
   }
 
   // Calculate savings
@@ -172,6 +192,15 @@ export default function CartPageClient({
           </div>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   )
 }

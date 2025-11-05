@@ -7,6 +7,7 @@ import { useLocale } from 'next-intl'
 import { updateAdminOrderStatusAction } from '@/app/actions/admin-orders'
 import type { OrderWithItems } from '@/lib/repositories/order.repository'
 import type { OrderStatus } from '@/lib/types'
+import Notification, { type NotificationType } from '@/components/ui/Notification'
 
 interface AdminOrdersClientProps {
   orders: OrderWithItems[]
@@ -16,6 +17,26 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
   const locale = useLocale()
   const [orders, setOrders] = useState(initialOrders)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean
+    type: NotificationType
+    title: string
+    message?: string
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+  })
+
+  const showNotification = (type: NotificationType, title: string, message?: string) => {
+    setNotification({ isOpen: true, type, title, message })
+  }
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }))
+  }
 
   const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
     setUpdatingId(orderId)
@@ -28,8 +49,9 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
           ? { ...o, status: newStatus, updatedAt: new Date().toISOString() }
           : o
       ))
+      showNotification('success', 'Order status updated successfully')
     } else {
-      alert(result.message || 'Failed to update order status')
+      showNotification('error', 'Failed to update order status', result.message || 'Failed to update order status')
     }
 
     setUpdatingId(null)
@@ -266,6 +288,15 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
           </div>
         )}
       </div>
+
+      {/* Notification */}
+      <Notification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+      />
     </div>
   )
 }

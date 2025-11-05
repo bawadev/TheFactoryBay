@@ -313,25 +313,30 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   }
 
   const handleDelete = async (productId: string, productName: string) => {
-    if (!confirm(`Are you sure you want to delete "${productName}"? This will also delete all its variants.`)) {
-      return
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${productName}"? This will also delete all its variants.`,
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
+        setDeletingId(productId)
 
-    setDeletingId(productId)
+        const result = await deleteProductAction(productId)
 
-    const result = await deleteProductAction(productId)
+        if (result.success) {
+          setProducts(products.filter(p => p.id !== productId))
+          // If we're editing this product, reset the form
+          if (editingId === productId) {
+            resetForm()
+          }
+          showNotification('success', 'Product deleted successfully')
+        } else {
+          showNotification('error', 'Failed to delete product', result.message || 'Failed to delete product')
+        }
 
-    if (result.success) {
-      setProducts(products.filter(p => p.id !== productId))
-      // If we're editing this product, reset the form
-      if (editingId === productId) {
-        resetForm()
+        setDeletingId(null)
       }
-    } else {
-      alert(result.message || 'Failed to delete product')
-    }
-
-    setDeletingId(null)
+    })
   }
 
   const handleOpenSectionDialog = async (product: ProductWithVariants) => {
@@ -352,7 +357,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
     const selectedSections = Object.entries(sectionQuantities).filter(([_, qty]) => qty > 0)
     if (selectedSections.length === 0) {
-      alert('Please enter at least one quantity')
+      showNotification('warning', 'No sections selected', 'Please enter at least one quantity')
       return
     }
 
@@ -360,17 +365,19 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     const totalAllocated = selectedSections.reduce((sum, [_, qty]) => sum + qty, 0)
 
     if (totalAllocated > totalStock) {
-      alert(`Total allocated (${totalAllocated}) cannot exceed available stock (${totalStock})`)
+      showNotification('error', 'Stock exceeded', `Total allocated (${totalAllocated}) cannot exceed available stock (${totalStock})`)
       return
     }
 
     setAssigningSections(true)
 
     // Assign to each selected section
+    let hasError = false
     for (const [categoryId, quantity] of selectedSections) {
       const result = await addProductToCategoryAction(categoryId, selectedProductForSection.id, quantity)
       if (!result.success) {
-        alert(`Failed to add to section: ${result.message}`)
+        showNotification('error', 'Failed to add to section', result.message || 'Failed to add to section')
+        hasError = true
       }
     }
 
@@ -379,7 +386,9 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     setSectionQuantities({})
     setSelectedProductForSection(null)
 
-    alert('Product assigned to sections successfully!')
+    if (!hasError) {
+      showNotification('success', 'Product assigned to sections successfully!')
+    }
   }
 
   const loadProductIntoForm = async (product: ProductWithVariants) => {
@@ -462,10 +471,12 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
       if (uploadResult.success && uploadResult.urls) {
         // Add each uploaded image to the variant
+        let hasError = false
         for (const url of uploadResult.urls) {
           const result = await addVariantImageAction(variantId, url)
           if (!result.success) {
-            alert(`Failed to add image: ${result.message}`)
+            showNotification('error', 'Failed to add image', result.message || 'Failed to add image')
+            hasError = true
           }
         }
 
@@ -477,54 +488,63 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           }
         }
 
-        alert('Images uploaded successfully!')
+        if (!hasError) {
+          showNotification('success', 'Images uploaded successfully!')
+        }
       } else {
-        alert(uploadResult.message || 'Failed to upload images')
+        showNotification('error', 'Failed to upload images', uploadResult.message || 'Failed to upload images')
       }
     } catch (error) {
       console.error('Upload error:', error)
-      alert('An error occurred while uploading images')
+      showNotification('error', 'Upload error', 'An error occurred while uploading images')
     } finally {
       setUploadingImages(prev => ({ ...prev, [variantId]: false }))
     }
   }
 
   const handleImageRemove = async (variantId: string, imageUrl: string) => {
-    if (!confirm('Are you sure you want to remove this image?')) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Image',
+      message: 'Are you sure you want to remove this image?',
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
 
-    try {
-      // Remove from variant
-      const result = await removeVariantImageAction(variantId, imageUrl)
+        try {
+          // Remove from variant
+          const result = await removeVariantImageAction(variantId, imageUrl)
 
-      if (result.success) {
-        // Delete from storage
-        await deleteImage(imageUrl)
+          if (result.success) {
+            // Delete from storage
+            await deleteImage(imageUrl)
 
-        // Update editing product
-        if (editingProduct) {
-          const updatedVariants = editingProduct.variants.map(v =>
-            v.id === variantId
-              ? { ...v, images: v.images.filter(img => img !== imageUrl) }
-              : v
-          )
-          setEditingProduct({ ...editingProduct, variants: updatedVariants })
+            // Update editing product
+            if (editingProduct) {
+              const updatedVariants = editingProduct.variants.map(v =>
+                v.id === variantId
+                  ? { ...v, images: v.images.filter(img => img !== imageUrl) }
+                  : v
+              )
+              setEditingProduct({ ...editingProduct, variants: updatedVariants })
 
-          // Update products list
-          setProducts(products.map(p =>
-            p.id === editingProduct.id
-              ? { ...p, variants: updatedVariants }
-              : p
-          ))
+              // Update products list
+              setProducts(products.map(p =>
+                p.id === editingProduct.id
+                  ? { ...p, variants: updatedVariants }
+                  : p
+              ))
+            }
+
+            showNotification('success', 'Image removed successfully!')
+          } else {
+            showNotification('error', 'Failed to remove image', result.message || 'Failed to remove image')
+          }
+        } catch (error) {
+          console.error('Remove error:', error)
+          showNotification('error', 'Remove error', 'An error occurred while removing image')
         }
-
-        alert('Image removed successfully!')
-      } else {
-        alert(result.message || 'Failed to remove image')
       }
-    } catch (error) {
-      console.error('Remove error:', error)
-      alert('An error occurred while removing image')
-    }
+    })
   }
 
   // Sorting function
@@ -567,12 +587,12 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   // Variant management functions
   const handleAddVariant = () => {
     if (!variantForm.size || !variantForm.color.trim()) {
-      alert('Please fill in size and color')
+      showNotification('warning', 'Missing information', 'Please fill in size and color')
       return
     }
 
     if (variantForm.stockQuantity < 0) {
-      alert('Stock quantity cannot be negative')
+      showNotification('warning', 'Invalid quantity', 'Stock quantity cannot be negative')
       return
     }
 
@@ -599,9 +619,16 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   }
 
   const handleDeleteVariant = (index: number) => {
-    if (confirm('Are you sure you want to delete this variant?')) {
-      setVariants(variants.filter((_, i) => i !== index))
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Variant',
+      message: 'Are you sure you want to delete this variant?',
+      onConfirm: () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
+        setVariants(variants.filter((_, i) => i !== index))
+        showNotification('success', 'Variant deleted')
+      }
+    })
   }
 
   const handleCancelVariantForm = () => {
@@ -615,17 +642,17 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
     // Validation
     if (!formData.name.trim() || !formData.brand.trim()) {
-      alert('Please fill in all required fields (Name, Brand)')
+      showNotification('warning', 'Missing required fields', 'Please fill in all required fields (Name, Brand)')
       return
     }
 
     if (formData.categoryIds.length === 0) {
-      alert('Please select at least one category (leaf categories only)')
+      showNotification('warning', 'No categories selected', 'Please select at least one category (leaf categories only)')
       return
     }
 
     if (variants.length === 0) {
-      alert('Please add at least one variant (size, color, stock)')
+      showNotification('warning', 'No variants added', 'Please add at least one variant (size, color, stock)')
       return
     }
 
@@ -633,7 +660,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     const retailPrice = parseFloat(formData.retailPrice)
 
     if (isNaN(stockPrice) || isNaN(retailPrice) || stockPrice <= 0 || retailPrice <= 0) {
-      alert('Please enter valid prices')
+      showNotification('warning', 'Invalid prices', 'Please enter valid prices')
       return
     }
 
@@ -665,10 +692,10 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
               : p
           )
           setProducts(updatedProducts)
-          alert('Product updated successfully!')
+          showNotification('success', 'Product updated successfully!')
           resetForm()
         } else {
-          alert(result.message || 'Failed to update product')
+          showNotification('error', 'Failed to update product', result.message || 'Failed to update product')
         }
       } else {
         // Create new product with variants
@@ -697,15 +724,15 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           await assignProductToCategoriesAction(result.data.product.id, formData.categoryIds)
 
           setProducts([result.data.product, ...products])
-          alert('Product created successfully with variants!')
+          showNotification('success', 'Product created successfully with variants!')
           resetForm()
         } else {
-          alert(result.message || 'Failed to create product')
+          showNotification('error', 'Failed to create product', result.message || 'Failed to create product')
         }
       }
     } catch (error) {
       console.error('Submit error:', error)
-      alert('An error occurred. Please try again.')
+      showNotification('error', 'Submission error', 'An error occurred. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -1781,6 +1808,24 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           setShowFormCategoryPicker(false)
         }}
         initialSelectedIds={formData.categoryIds}
+      />
+
+      {/* Notification */}
+      <Notification
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
       />
     </div>
   )

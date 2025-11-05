@@ -80,11 +80,11 @@ export default function SearchAutocomplete({
   }
 
   const inputClasses = large
-    ? 'w-full px-6 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200 transition-all'
-    : 'w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200 transition-all'
+    ? 'w-full px-6 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200 transition-all bg-white text-gray-900'
+    : 'w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200 transition-all bg-white text-gray-900'
 
   return (
-    <div ref={wrapperRef} className={`relative ${className}`}>
+    <div ref={wrapperRef} className={`relative`}>
       <form onSubmit={handleSearch}>
         <div className="relative">
           <input
@@ -92,7 +92,7 @@ export default function SearchAutocomplete({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
-            className={inputClasses}
+            className={`${inputClasses} ${className}`}
           />
           <button
             type="submit"

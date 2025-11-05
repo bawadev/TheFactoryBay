@@ -11,6 +11,7 @@ import {
   findDuplicateNamesAction
 } from '@/app/actions/categories'
 import type { CategoryWithChildren, CategoryTree } from '@/lib/repositories/category.repository'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function CategoriesClient() {
   const [categoryTree, setCategoryTree] = useState<CategoryTree | null>(null)
@@ -26,6 +27,19 @@ export default function CategoriesClient() {
   const [duplicates, setDuplicates] = useState<any[]>([])
   const [showStats, setShowStats] = useState(false)
   const [showDuplicates, setShowDuplicates] = useState(false)
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
 
   useEffect(() => {
     loadCategories()
@@ -121,22 +135,23 @@ export default function CategoriesClient() {
   }
 
   async function handleDeleteCategory(categoryId: string, categoryName: string) {
-    if (
-      !confirm(
-        `Are you sure you want to delete "${categoryName}"? This will only work if the category has no children and no products.`
-      )
-    ) {
-      return
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Category',
+      message: `Are you sure you want to delete "${categoryName}"? This will only work if the category has no children and no products.`,
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false })
 
-    const result = await deleteCategoryAction(categoryId)
-    if (result.success) {
-      toast.success('Category deleted')
-      loadCategories()
-    } else {
-      const errorMsg = 'message' in result ? result.message : ('error' in result ? result.error : undefined)
-      toast.error(errorMsg || 'Failed to delete category')
-    }
+        const result = await deleteCategoryAction(categoryId)
+        if (result.success) {
+          toast.success('Category deleted')
+          loadCategories()
+        } else {
+          const errorMsg = 'message' in result ? result.message : ('error' in result ? result.error : undefined)
+          toast.error(errorMsg || 'Failed to delete category')
+        }
+      }
+    })
   }
 
   function openCreateModal(
@@ -485,6 +500,15 @@ export default function CategoriesClient() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   )
 }
