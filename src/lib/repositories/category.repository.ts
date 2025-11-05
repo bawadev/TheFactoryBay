@@ -55,7 +55,7 @@ export interface Category {
   id: string
   name: string
   slug: string
-  hierarchy: 'ladies' | 'gents' | 'kids' // Top-level hierarchy identifier
+  hierarchy: string // Top-level hierarchy identifier (dynamic, supports any custom hierarchy)
   parentId: string | null
   level: number
   isActive: boolean
@@ -70,9 +70,7 @@ export interface CategoryWithChildren extends Category {
 }
 
 export interface CategoryTree {
-  ladies: CategoryWithChildren[]
-  gents: CategoryWithChildren[]
-  kids: CategoryWithChildren[]
+  [hierarchy: string]: CategoryWithChildren[]
 }
 
 /**
@@ -81,7 +79,7 @@ export interface CategoryTree {
 export async function createCategory(
   session: Session,
   name: string,
-  hierarchy: 'ladies' | 'gents' | 'kids',
+  hierarchy: string,
   parentId: string | null = null,
   isFeatured: boolean = false
 ): Promise<Category> {
@@ -129,21 +127,17 @@ export async function createCategory(
 }
 
 /**
- * Get all root categories (Ladies, Gents, Kids) with descendant product counts
+ * Get all root categories with descendant product counts
+ * Dynamically supports any root hierarchy
  */
 export async function getRootCategories(session: Session): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category)
      WHERE c.level = 0
-     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
+     OPTIONAL MATCH (c)<-[:CHILD_OF*0..]-(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
-     ORDER BY
-       CASE c.hierarchy
-         WHEN 'ladies' THEN 1
-         WHEN 'gents' THEN 2
-         WHEN 'kids' THEN 3
-       END`
+     ORDER BY c.name ASC`
   )
 
   return result.records.map(record => convertNeo4jIntegers(record.get('c')))
@@ -177,7 +171,7 @@ export async function getChildCategoriesWithDescendantCounts(
 ): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category)-[:CHILD_OF]->(parent:Category {id: $parentId})
-     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
+     OPTIONAL MATCH (c)<-[:CHILD_OF*0..]-(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
      ORDER BY c.name`,
@@ -216,7 +210,7 @@ export async function getCategoryTree(session: Session): Promise<CategoryTree> {
   // Get all categories with product counts including all descendants recursively
   const result = await session.run(
     `MATCH (c:Category)
-     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
+     OPTIONAL MATCH (c)<-[:CHILD_OF*0..]-(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c.id as id,
             c.name as name,
@@ -256,10 +250,8 @@ export async function getCategoryTree(session: Session): Promise<CategoryTree> {
     categoryMap.set(cat.id, { ...cat, children: [] })
   })
 
-  // Separate by hierarchy
-  const ladies: CategoryWithChildren[] = []
-  const gents: CategoryWithChildren[] = []
-  const kids: CategoryWithChildren[] = []
+  // Separate by hierarchy (dynamic grouping)
+  const hierarchyMap: { [hierarchy: string]: CategoryWithChildren[] } = {}
 
   // Build parent-child relationships
   allCategories.forEach(cat => {
@@ -271,22 +263,15 @@ export async function getCategoryTree(session: Session): Promise<CategoryTree> {
         parent.children.push(category)
       }
     } else {
-      // Root category
-      switch (cat.hierarchy) {
-        case 'ladies':
-          ladies.push(category)
-          break
-        case 'gents':
-          gents.push(category)
-          break
-        case 'kids':
-          kids.push(category)
-          break
+      // Root category - group by hierarchy
+      if (!hierarchyMap[cat.hierarchy]) {
+        hierarchyMap[cat.hierarchy] = []
       }
+      hierarchyMap[cat.hierarchy].push(category)
     }
   })
 
-  return { ladies, gents, kids }
+  return hierarchyMap
 }
 
 /**
@@ -294,7 +279,7 @@ export async function getCategoryTree(session: Session): Promise<CategoryTree> {
  */
 export async function getCategoriesByHierarchy(
   session: Session,
-  hierarchy: 'ladies' | 'gents' | 'kids'
+  hierarchy: string
 ): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category {hierarchy: $hierarchy})
@@ -594,7 +579,7 @@ export async function getProductsByCategories(
 export async function getFeaturedCategories(session: Session): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category {isFeatured: true, isActive: true})
-     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
+     OPTIONAL MATCH (c)<-[:CHILD_OF*0..]-(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
      ORDER BY c.level, c.name`
@@ -668,7 +653,7 @@ export async function getLeafCategories(session: Session): Promise<Category[]> {
  */
 export async function getLeafCategoriesByHierarchy(
   session: Session,
-  hierarchy: 'ladies' | 'gents' | 'kids'
+  hierarchy: string
 ): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category {hierarchy: $hierarchy})

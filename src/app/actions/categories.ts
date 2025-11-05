@@ -90,7 +90,7 @@ export async function getCategoryTreeAction() {
  * Get categories by hierarchy
  */
 export async function getCategoriesByHierarchyAction(
-  hierarchy: 'ladies' | 'gents' | 'kids'
+  hierarchy: string
 ) {
   const session = getSession()
   try {
@@ -194,7 +194,7 @@ export async function getCategoryPathAction(categoryId: string) {
  */
 export async function createCategoryAction(
   name: string,
-  hierarchy: 'ladies' | 'gents' | 'kids',
+  hierarchy: string,
   parentId: string | null = null,
   isFeatured: boolean = false
 ) {
@@ -409,7 +409,7 @@ export async function getLeafCategoriesAction() {
  * Get leaf categories by hierarchy
  */
 export async function getLeafCategoriesByHierarchyAction(
-  hierarchy: 'ladies' | 'gents' | 'kids'
+  hierarchy: string
 ) {
   const session = getSession()
   try {
@@ -457,6 +457,142 @@ export async function assignProductToCategoriesAction(
     return { success: true }
   } catch (error: any) {
     console.error('Error assigning product to categories:', error)
+    return { success: false, error: error.message }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Get products for a specific category with full details (Admin only)
+ */
+export async function getCategoryProductsAction(categoryId: string) {
+  if (!(await isAdmin())) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const session = getSession()
+  try {
+    const result = await session.run(
+      `MATCH (p:Product)-[:HAS_CATEGORY]->(c:Category {id: $categoryId})
+       OPTIONAL MATCH (v:ProductVariant)-[:VARIANT_OF]->(p)
+       WITH p, collect(v {.*}) as variants
+       RETURN p {.*, variants: variants}
+       ORDER BY p.name`,
+      { categoryId }
+    )
+
+    const products = result.records.map(record => convertNeo4jIntegers(record.get('p')))
+    return { success: true, data: products }
+  } catch (error: any) {
+    console.error('Error fetching category products:', error)
+    return { success: false, error: error.message }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Remove product from a category (Admin only)
+ */
+export async function removeProductFromCategoryAction(
+  productId: string,
+  categoryId: string
+) {
+  if (!(await isAdmin())) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const session = getSession()
+  try {
+    await session.run(
+      `MATCH (p:Product {id: $productId})-[r:HAS_CATEGORY]->(c:Category {id: $categoryId})
+       DELETE r`,
+      { productId, categoryId }
+    )
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error removing product from category:', error)
+    return { success: false, error: error.message }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Add product to a category (Admin only)
+ */
+export async function addProductToCategoryAction(
+  productId: string,
+  categoryId: string
+) {
+  if (!(await isAdmin())) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const session = getSession()
+  try {
+    // Validate category is a leaf
+    const validation = await categoryRepo.validateLeafCategoryForProduct(session, categoryId)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+
+    // Check if relationship already exists
+    const existingResult = await session.run(
+      `MATCH (p:Product {id: $productId})-[r:HAS_CATEGORY]->(c:Category {id: $categoryId})
+       RETURN r`,
+      { productId, categoryId }
+    )
+
+    if (existingResult.records.length > 0) {
+      return { success: false, error: 'Product is already assigned to this category' }
+    }
+
+    // Create relationship
+    await session.run(
+      `MATCH (p:Product {id: $productId})
+       MATCH (c:Category {id: $categoryId})
+       CREATE (p)-[:HAS_CATEGORY]->(c)`,
+      { productId, categoryId }
+    )
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error adding product to category:', error)
+    return { success: false, error: error.message }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Get all products that are NOT assigned to a specific category (Admin only)
+ */
+export async function getUnassignedProductsAction(categoryId: string) {
+  if (!(await isAdmin())) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const session = getSession()
+  try {
+    const result = await session.run(
+      `MATCH (p:Product)
+       WHERE NOT EXISTS {
+         MATCH (p)-[:HAS_CATEGORY]->(c:Category {id: $categoryId})
+       }
+       OPTIONAL MATCH (v:ProductVariant)-[:VARIANT_OF]->(p)
+       WITH p, collect(v {.*}) as variants
+       RETURN p {.*, variants: variants}
+       ORDER BY p.name
+       LIMIT 100`,
+      { categoryId }
+    )
+
+    const products = result.records.map(record => convertNeo4jIntegers(record.get('p')))
+    return { success: true, data: products }
+  } catch (error: any) {
+    console.error('Error fetching unassigned products:', error)
     return { success: false, error: error.message }
   } finally {
     await session.close()

@@ -28,6 +28,8 @@ import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { ProductCategory, ProductGender, Product, PromotionalCategory, SizeOption } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import CategoryPickerDialog from '@/components/category/CategoryPickerDialog'
+import Notification, { type NotificationType } from '@/components/ui/Notification'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface AdminProductsClientProps {
   products: ProductWithVariants[]
@@ -123,6 +125,39 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     stockQuantity: 0
   })
   const [showVariantForm, setShowVariantForm] = useState(false)
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean
+    type: NotificationType
+    title: string
+    message?: string
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+  })
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
+  const showNotification = (type: NotificationType, title: string, message?: string) => {
+    setNotification({ isOpen: true, type, title, message })
+  }
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }))
+  }
 
   const nameInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)

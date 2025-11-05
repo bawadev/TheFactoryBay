@@ -135,7 +135,7 @@ export default function HomePageClient({
     setCurrentSlide(index)
   }
 
-  // Load root categories on mount (Ladies, Gents, Kids)
+  // Load all root categories dynamically on mount
   useEffect(() => {
     getRootCategoriesAction().then((result) => {
       if (result.success && result.data) {
@@ -329,7 +329,7 @@ export default function HomePageClient({
               <SearchAutocomplete
                 placeholder="Search for branded clothing at stock prices..."
                 large={true}
-                className="!bg-white !shadow-none"
+                className="!bg-white/20 !backdrop-blur-sm !shadow-none !border-white/30 [&_input]:!text-white [&_input]:!placeholder-white/70"
               />
             </div>
           </div>
@@ -338,13 +338,16 @@ export default function HomePageClient({
           <div className="mt-12 sm:mt-16 text-center">
             <p className="text-sm text-gray-300 mb-4">Popular categories:</p>
             <div className="flex flex-wrap justify-center gap-3">
-              {['Men', 'Women', 'Kids', 'Accessories'].map((category) => (
+              {rootCategories.map((category) => (
                 <Link
-                  key={category}
-                  href={`/${locale}/shop?category=${category.toLowerCase()}`}
+                  key={category.id}
+                  href={`/${locale}/shop?category=${category.hierarchy}`}
                   className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium text-white transition-all duration-200 border border-white/10 hover:border-white/30 hover:scale-105"
                 >
-                  {category}
+                  {category.name}
+                  {category.productCount !== undefined && category.productCount > 0 && (
+                    <span className="ml-2 text-xs opacity-75">({category.productCount})</span>
+                  )}
                 </Link>
               ))}
             </div>
@@ -376,7 +379,7 @@ export default function HomePageClient({
             </div>
           </div>
 
-          {/* Root Category Chips - Ladies, Gents, Kids */}
+          {/* Root Category Chips - All Dynamic Hierarchies */}
           <div className="flex flex-wrap gap-3">
             {rootCategories.map((category) => {
               const isExpanded = expandedCategoryId === category.id

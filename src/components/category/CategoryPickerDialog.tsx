@@ -48,12 +48,8 @@ export default function CategoryPickerDialog({
     setLoading(true)
     const result = await getCategoryTreeAction()
     if (result.success && result.data) {
-      // getCategoryTreeAction returns { ladies: [], gents: [], kids: [] }
-      const tree = [
-        ...result.data.ladies,
-        ...result.data.gents,
-        ...result.data.kids
-      ]
+      // getCategoryTreeAction returns dynamic hierarchies
+      const tree = Object.values(result.data).flat()
       setCategoryTree(tree as CategoryTreeItem[])
     }
     setLoading(false)

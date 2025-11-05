@@ -257,8 +257,20 @@ tsx scripts/your-test-script.ts
 ```
 
 ### Debugging
+
+**Web Interfaces:**
 - Neo4j Browser: http://localhost:7474 (neo4j/factorybay123)
 - MinIO Console: http://localhost:9001 (factorybay/factorybay123)
+
+**Direct Database Access:**
+```bash
+# Neo4j Cypher Shell
+docker exec -it factory-bay-neo4j cypher-shell -u neo4j -p factorybay123
+
+# Quick queries
+docker exec factory-bay-neo4j cypher-shell -u neo4j -p factorybay123 "MATCH (n) RETURN labels(n), count(*)"
+docker exec factory-bay-neo4j cypher-shell -u neo4j -p factorybay123 "MATCH (c:Category) WHERE c.level = 0 RETURN c.name, c.hierarchy"
+```
 
 ## Environment Variables
 

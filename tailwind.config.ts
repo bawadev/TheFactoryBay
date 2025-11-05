@@ -56,7 +56,9 @@ const config: Config = {
       },
       animation: {
         'slide-in-right': 'slideInRight 300ms ease-out',
+        'slide-in': 'slideIn 300ms ease-out',
         'scale-up': 'scaleUp 300ms ease-out',
+        'scale-in': 'scaleIn 200ms ease-out',
         'shimmer': 'shimmer 2s infinite',
         'pulse-scale': 'pulseScale 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
@@ -66,8 +68,16 @@ const config: Config = {
           from: { transform: 'translateX(100%)', opacity: '0' },
           to: { transform: 'translateX(0)', opacity: '1' },
         },
+        slideIn: {
+          from: { transform: 'translateY(-1rem)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
         scaleUp: {
           from: { transform: 'scale(0.95)', opacity: '0' },
+          to: { transform: 'scale(1)', opacity: '1' },
+        },
+        scaleIn: {
+          from: { transform: 'scale(0.9)', opacity: '0' },
           to: { transform: 'scale(1)', opacity: '1' },
         },
         shimmer: {

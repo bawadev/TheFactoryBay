@@ -8,7 +8,21 @@ import {
   updateCategoryAction,
   deleteCategoryAction,
   getCategoryTreeAction,
+  getCategoryProductsAction,
+  getUnassignedProductsAction,
+  addProductToCategoryAction,
+  removeProductFromCategoryAction,
 } from '@/app/actions/categories'
+import Notification, { type NotificationType } from '@/components/ui/Notification'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+
+interface ProductWithVariants {
+  id: string
+  name: string
+  brand: string
+  imageUrl?: string
+  variants?: any[]
+}
 
 interface CategoriesClientProps {
   initialCategories: CategoryTree
@@ -18,18 +32,55 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const [categoryTree, setCategoryTree] = useState<CategoryTree>(initialCategories)
 
   // Flatten tree to array for easier processing
-  const categories = [
-    ...categoryTree.ladies,
-    ...categoryTree.gents,
-    ...categoryTree.kids
-  ]
+  const categories = Object.values(categoryTree).flat()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
-  const [selectedHierarchy, setSelectedHierarchy] = useState<'ladies' | 'gents' | 'kids'>('ladies')
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [showOnlyFeatured, setShowOnlyFeatured] = useState(false)
+
+  // Product management state
+  const [showProductsModal, setShowProductsModal] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<CategoryWithChildren | null>(null)
+  const [categoryProducts, setCategoryProducts] = useState<ProductWithVariants[]>([])
+  const [unassignedProducts, setUnassignedProducts] = useState<ProductWithVariants[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [showAddProductsSection, setShowAddProductsSection] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean
+    type: NotificationType
+    title: string
+    message?: string
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+  })
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
+  const showNotification = (type: NotificationType, title: string, message?: string) => {
+    setNotification({ isOpen: true, type, title, message })
+  }
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }))
+  }
 
   const refreshCategories = async () => {
     const result = await getCategoryTreeAction()
@@ -38,37 +89,140 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     }
   }
 
+  const handleViewProducts = async (category: CategoryWithChildren) => {
+    setSelectedCategory(category)
+    setShowProductsModal(true)
+    setShowAddProductsSection(false)
+    setSearchQuery('')
+    setLoadingProducts(true)
+
+    // Load products for this category
+    const productsResult = await getCategoryProductsAction(category.id)
+    if (productsResult.success && productsResult.data) {
+      setCategoryProducts(productsResult.data)
+    } else {
+      showNotification('error', 'Error', 'Failed to load products')
+      setCategoryProducts([])
+    }
+
+    setLoadingProducts(false)
+  }
+
+  const handleLoadUnassignedProducts = async () => {
+    if (!selectedCategory) return
+
+    setShowAddProductsSection(true)
+    setLoadingProducts(true)
+
+    const result = await getUnassignedProductsAction(selectedCategory.id)
+    if (result.success && result.data) {
+      setUnassignedProducts(result.data)
+    } else {
+      showNotification('error', 'Error', 'Failed to load products')
+      setUnassignedProducts([])
+    }
+
+    setLoadingProducts(false)
+  }
+
+  const handleAddProductToCategory = async (productId: string) => {
+    if (!selectedCategory) return
+
+    const result = await addProductToCategoryAction(productId, selectedCategory.id)
+    if (result.success) {
+      showNotification('success', 'Success', 'Product added to category')
+      // Refresh both lists
+      await handleViewProducts(selectedCategory)
+      if (showAddProductsSection) {
+        const unassignedResult = await getUnassignedProductsAction(selectedCategory.id)
+        if (unassignedResult.success && unassignedResult.data) {
+          setUnassignedProducts(unassignedResult.data)
+        }
+      }
+      await refreshCategories()
+    } else {
+      showNotification('error', 'Error', result.error || 'Failed to add product')
+    }
+  }
+
+  const handleRemoveProductFromCategory = (productId: string, productName: string) => {
+    if (!selectedCategory) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Product',
+      message: `Are you sure you want to remove "${productName}" from "${selectedCategory.name}"?`,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }))
+        const result = await removeProductFromCategoryAction(productId, selectedCategory.id)
+        if (result.success) {
+          showNotification('success', 'Success', 'Product removed from category')
+          // Refresh products list
+          await handleViewProducts(selectedCategory)
+          await refreshCategories()
+        } else {
+          showNotification('error', 'Error', 'Failed to remove product')
+        }
+      },
+    })
+  }
+
+  const closeProductsModal = () => {
+    setShowProductsModal(false)
+    setSelectedCategory(null)
+    setCategoryProducts([])
+    setUnassignedProducts([])
+    setShowAddProductsSection(false)
+    setSearchQuery('')
+  }
+
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
-      alert('Please enter a category name')
+      showNotification('error', 'Validation Error', 'Please enter a category name')
       return
+    }
+
+    // Determine which hierarchy to use
+    let hierarchyToUse: string
+
+    if (selectedParentId) {
+      // For child categories, get the parent's hierarchy
+      const parent = flattenCategories(categories).find(c => c.id === selectedParentId)
+      if (!parent) {
+        showNotification('error', 'Error', 'Parent category not found')
+        return
+      }
+      hierarchyToUse = parent.hierarchy
+    } else {
+      // For root categories, use the category name as the hierarchy
+      hierarchyToUse = newCategoryName.toLowerCase().trim()
     }
 
     const result = await createCategoryAction(
       newCategoryName,
-      selectedHierarchy,
+      hierarchyToUse as any,
       selectedParentId,
       false
     )
     if (result.success) {
-      alert('Category created successfully')
+      showNotification('success', 'Success', 'Category created successfully')
       setNewCategoryName('')
       setSelectedParentId(null)
       setShowCreateModal(false)
       await refreshCategories()
     } else {
-      alert(result.error || 'Failed to create category')
+      showNotification('error', 'Error', result.error || 'Failed to create category')
     }
   }
 
   const handleUpdateCategory = async (categoryId: string, name: string, isActive: boolean) => {
     const result = await updateCategoryAction(categoryId, { name, isActive })
     if (result.success) {
-      alert('Category updated successfully')
+      showNotification('success', 'Success', 'Category updated successfully')
       setEditingCategory(null)
       await refreshCategories()
     } else {
-      alert(result.error || 'Failed to update category')
+      showNotification('error', 'Error', result.error || 'Failed to update category')
     }
   }
 
@@ -76,23 +230,28 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     const result = await updateCategoryAction(categoryId, { isFeatured: !currentFeatured })
     if (result.success) {
       await refreshCategories()
+      showNotification('success', 'Success', `Category ${!currentFeatured ? 'marked as featured' : 'removed from featured'}`)
     } else {
-      alert(result.error || 'Failed to update featured status')
+      showNotification('error', 'Error', result.error || 'Failed to update featured status')
     }
   }
 
-  const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
-    if (!confirm(`Are you sure you want to delete "${categoryName}"? This will also delete all child categories.`)) {
-      return
-    }
-
-    const result = await deleteCategoryAction(categoryId)
-    if (result.success) {
-      alert('Category deleted successfully')
-      await refreshCategories()
-    } else {
-      alert(result.error || 'Failed to delete category')
-    }
+  const handleDeleteCategory = (categoryId: string, categoryName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Category',
+      message: `Are you sure you want to delete "${categoryName}"? This will also delete all child categories.`,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }))
+        const result = await deleteCategoryAction(categoryId)
+        if (result.success) {
+          showNotification('success', 'Success', 'Category deleted successfully')
+          await refreshCategories()
+        } else {
+          showNotification('error', 'Error', result.error || 'Failed to delete category')
+        }
+      },
+    })
   }
 
   const toggleExpand = (categoryId: string) => {
@@ -265,9 +424,17 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
             ) : (
               <>
                 <button
+                  onClick={() => handleViewProducts(category)}
+                  className="text-purple-600 hover:text-purple-700 p-1"
+                  title="View Products"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </button>
+                <button
                   onClick={() => {
                     setSelectedParentId(category.id)
-                    setSelectedHierarchy(category.hierarchy)
                     setShowCreateModal(true)
                   }}
                   className="text-blue-600 hover:text-blue-700 p-1"
@@ -422,24 +589,11 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
             {!selectedParentId && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hierarchy <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-2">
-                  {(['ladies', 'gents', 'kids'] as const).map((h) => (
-                    <button
-                      key={h}
-                      onClick={() => setSelectedHierarchy(h)}
-                      className={`flex-1 px-3 py-2 rounded-lg border-2 transition-colors font-medium ${
-                        selectedHierarchy === h
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      {h.charAt(0).toUpperCase() + h.slice(1)}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-sm text-gray-600">
+                  This will create a new root hierarchy: <span className="font-medium">
+                    {newCategoryName.toLowerCase().trim() || '(enter a name)'}
+                  </span>
+                </p>
               </div>
             )}
 
@@ -474,6 +628,198 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           </div>
         </div>
       )}
+
+      {/* Products Modal */}
+      {showProductsModal && selectedCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Products in "{selectedCategory.name}"
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage products assigned to this category
+                  </p>
+                </div>
+                <button
+                  onClick={closeProductsModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {loadingProducts ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-500">Loading products...</div>
+                </div>
+              ) : (
+                <>
+                  {/* Assigned Products */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      Assigned Products ({categoryProducts.length})
+                    </h3>
+                    {categoryProducts.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                        No products assigned to this category yet
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {categoryProducts.map(product => (
+                          <div
+                            key={product.id}
+                            className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                          >
+                            {product.imageUrl && (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{product.name}</h4>
+                              <p className="text-sm text-gray-600">{product.brand}</p>
+                              {product.variants && product.variants.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {product.variants.length} variants
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleRemoveProductFromCategory(product.id, product.name)}
+                              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add Products Section */}
+                  {!showAddProductsSection ? (
+                    <button
+                      onClick={handleLoadUnassignedProducts}
+                      className="w-full px-4 py-3 text-blue-600 border-2 border-dashed border-blue-300 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                    >
+                      + Add Products to Category
+                    </button>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Available Products ({unassignedProducts.filter(p =>
+                            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            p.brand.toLowerCase().includes(searchQuery.toLowerCase())
+                          ).length})
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setShowAddProductsSection(false)
+                            setSearchQuery('')
+                          }}
+                          className="text-sm text-gray-600 hover:text-gray-800"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      {/* Search */}
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search products..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+
+                      {/* Unassigned Products */}
+                      <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                        {unassignedProducts
+                          .filter(p =>
+                            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            p.brand.toLowerCase().includes(searchQuery.toLowerCase())
+                          )
+                          .map(product => (
+                            <div
+                              key={product.id}
+                              className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                            >
+                              {product.imageUrl && (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{product.name}</h4>
+                                <p className="text-sm text-gray-600">{product.brand}</p>
+                                {product.variants && product.variants.length > 0 && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {product.variants.length} variants
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleAddProductToCategory(product.id)}
+                                className="px-3 py-1.5 text-sm text-green-600 hover:text-green-700 border border-green-300 rounded-lg hover:bg-green-50 transition-colors"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={closeProductsModal}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification */}
+      <Notification
+        isOpen={notification.isOpen}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        onClose={closeNotification}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        type="danger"
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   )
 }
