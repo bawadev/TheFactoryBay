@@ -48,49 +48,15 @@ export default function CategoryPickerDialog({
     setLoading(true)
     const result = await getCategoryTreeAction()
     if (result.success && result.data) {
-      setCategoryTree(buildTree(result.data))
+      // getCategoryTreeAction returns { ladies: [], gents: [], kids: [] }
+      const tree = [
+        ...result.data.ladies,
+        ...result.data.gents,
+        ...result.data.kids
+      ]
+      setCategoryTree(tree as CategoryTreeItem[])
     }
     setLoading(false)
-  }
-
-  // Build hierarchical tree from flat list
-  const buildTree = (categories: Category[]): CategoryTreeItem[] => {
-    const categoryMap = new Map<string, CategoryTreeItem>()
-    const rootCategories: CategoryTreeItem[] = []
-
-    // First pass: create map
-    categories.forEach(cat => {
-      categoryMap.set(cat.id, { ...cat, children: [] })
-    })
-
-    // Second pass: build tree
-    categories.forEach(cat => {
-      const categoryItem = categoryMap.get(cat.id)!
-
-      if (cat.level === 0) {
-        rootCategories.push(categoryItem)
-      } else {
-        // Find parent by looking for category that has this as a child
-        categories.forEach(potentialParent => {
-          if (potentialParent.level === cat.level - 1) {
-            // This is a potential parent - we need to check if it's actually the parent
-            // For now, we'll use a simple heuristic: same hierarchy
-            if (potentialParent.hierarchy === cat.hierarchy) {
-              const parentItem = categoryMap.get(potentialParent.id)
-              if (parentItem && parentItem.children) {
-                // Check if this child belongs to this parent
-                // (This is simplified - in reality we'd check the HAS_CHILD relationship)
-                if (!parentItem.children.find(c => c.id === cat.id)) {
-                  parentItem.children.push(categoryItem)
-                }
-              }
-            }
-          }
-        })
-      }
-    })
-
-    return rootCategories.sort((a, b) => a.name.localeCompare(b.name))
   }
 
   const toggleExpand = (categoryId: string) => {

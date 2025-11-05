@@ -24,12 +24,10 @@ import {
   getCategoryTreeAction,
   getCategoryByIdAction,
 } from '@/app/actions/categories'
-import { getProductFiltersAction } from '@/app/actions/custom-filters'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { ProductCategory, ProductGender, Product, PromotionalCategory, SizeOption } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import CategoryPickerDialog from '@/components/category/CategoryPickerDialog'
-import FilterPickerDialog from '@/components/filters/FilterPickerDialog'
 
 interface AdminProductsClientProps {
   products: ProductWithVariants[]
@@ -41,7 +39,6 @@ type FormData = {
   brand: string
   category?: ProductCategory // DEPRECATED: Use categoryIds instead
   categoryIds: string[] // Selected category IDs (leaf categories only)
-  filterIds: string[] // Selected filter IDs for custom filters
   gender: ProductGender
   stockPrice: string
   retailPrice: string
@@ -73,7 +70,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     description: '',
     brand: '',
     categoryIds: [],
-    filterIds: [],
     gender: 'UNISEX',
     stockPrice: '',
     retailPrice: '',
@@ -113,11 +109,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   const [sectionQuantities, setSectionQuantities] = useState<Record<string, number>>({})
   const [assigningSections, setAssigningSections] = useState(false)
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
-
-  // Filter picker state (for existing products)
-  const [showFilterPicker, setShowFilterPicker] = useState(false)
-  const [selectedProductForFilters, setSelectedProductForFilters] = useState<ProductWithVariants | null>(null)
-  const [selectedFilterIds, setSelectedFilterIds] = useState<string[]>([])
 
   // Category picker state (for form - new/edit products)
   const [showFormCategoryPicker, setShowFormCategoryPicker] = useState(false)
@@ -356,53 +347,16 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     alert('Product assigned to sections successfully!')
   }
 
-  const handleOpenFilterPicker = async (product: ProductWithVariants) => {
-    setSelectedProductForFilters(product)
-    setOpenDropdownId(null)
-
-    // Load current filters for this product
-    const result = await getProductFiltersAction(product.id)
-    if (result.success && result.data) {
-      setSelectedFilterIds(result.data.map(f => f.id))
-    } else {
-      setSelectedFilterIds([])
-    }
-
-    setShowFilterPicker(true)
-  }
-
-  const handleConfirmFilters = async (filterIds: string[]) => {
-    if (!selectedProductForFilters) return
-
-    const result = await assignProductToCategoriesAction(selectedProductForFilters.id, filterIds)
-    if (result.success) {
-      alert('Product categories updated successfully!')
-    } else {
-      alert(result.error || 'Failed to update categories')
-    }
-
-    setShowFilterPicker(false)
-    setSelectedProductForFilters(null)
-    setSelectedFilterIds([])
-  }
-
   const loadProductIntoForm = async (product: ProductWithVariants) => {
     setIsEditing(true)
     setEditingId(product.id)
     setEditingProduct(product)
-
-    // Load product's filters
-    const filtersResult = await getProductFiltersAction(product.id)
-    const filterIds = filtersResult.success && filtersResult.data
-      ? filtersResult.data.map(f => f.id)
-      : []
 
     setFormData({
       name: product.name,
       description: product.description,
       brand: product.brand,
       categoryIds: [],
-      filterIds,
       gender: product.gender,
       stockPrice: product.stockPrice.toString(),
       retailPrice: product.retailPrice.toString(),
@@ -1571,24 +1525,12 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                                     e.stopPropagation()
                                     handleOpenSectionDialog(product)
                                   }}
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-t-lg"
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-lg"
                                 >
                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                   </svg>
                                   Add to Sections
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleOpenFilterPicker(product)
-                                  }}
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-b-lg border-t border-gray-100"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                  </svg>
-                                  Tag with Filters
                                 </button>
                               </div>
                             )}
@@ -1794,18 +1736,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
           </div>
         </div>
       )}
-
-      {/* Filter Picker Dialog (for existing products) */}
-      <FilterPickerDialog
-        isOpen={showFilterPicker}
-        onClose={() => {
-          setShowFilterPicker(false)
-          setSelectedProductForFilters(null)
-          setSelectedFilterIds([])
-        }}
-        onConfirm={handleConfirmFilters}
-        initialSelectedIds={selectedFilterIds}
-      />
 
       {/* Category Picker Dialog (for form - new/edit products) */}
       <CategoryPickerDialog

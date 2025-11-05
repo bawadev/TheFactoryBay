@@ -7,17 +7,15 @@ import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { PromotionalCategory } from '@/lib/types'
-import type { CustomFilter } from '@/lib/repositories/custom-filter.repository'
+import type { Category } from '@/lib/repositories/category.repository'
 import SearchAutocomplete from '@/components/SearchAutocomplete'
-import AdvancedFilterDialog from '@/components/filters/AdvancedFilterDialog'
 import Badge from '@/components/ui/Badge'
 import {
-  getFeaturedFiltersAction,
-  getProductsByFiltersAction,
-  getFullProductsByFiltersAction,
-  getAllChildFilterIdsAction,
-  getAllParentFilterIdsAction
-} from '@/app/actions/custom-filters'
+  getRootCategoriesAction,
+  getChildCategoriesWithDescendantCountsAction,
+  getProductsByCategoriesAction,
+  getFullProductsByCategoriesAction
+} from '@/app/actions/categories'
 
 interface HomePageClientProps {
   isAuthenticated: boolean
@@ -98,11 +96,14 @@ export default function HomePageClient({
   const locale = useLocale()
   const router = useRouter()
   const t = useTranslations('home')
-  const [selectedFilterIds, setSelectedFilterIds] = useState<Set<string>>(new Set())
+
+  // Category state
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set())
   const [filteredProductIds, setFilteredProductIds] = useState<string[]>([])
   const [filteredProducts, setFilteredProducts] = useState<ProductWithVariants[]>([])
-  const [allFilters, setAllFilters] = useState<CustomFilter[]>([])
-  const [showAdvancedDialog, setShowAdvancedDialog] = useState(false)
+  const [rootCategories, setRootCategories] = useState<Category[]>([])
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null)
+  const [childCategories, setChildCategories] = useState<Category[]>([])
 
   // Hero slider state
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -112,16 +113,6 @@ export default function HomePageClient({
     '/images/hero-bg-3.jpg',
     '/images/hero-bg-4.jpg',
   ]
-
-  // Group filters by name for deduplication
-  interface GroupedFilter {
-    name: string
-    level: number
-    filterIds: string[]
-    isActive: boolean
-    isFeatured: boolean
-  }
-  const [groupedFilters, setGroupedFilters] = useState<GroupedFilter[]>([])
 
   // Auto-rotate hero slider
   useEffect(() => {
@@ -144,56 +135,27 @@ export default function HomePageClient({
     setCurrentSlide(index)
   }
 
-  // Load featured filters on mount and group by name
+  // Load root categories on mount (Ladies, Gents, Kids)
   useEffect(() => {
-    getFeaturedFiltersAction().then((result) => {
+    getRootCategoriesAction().then((result) => {
       if (result.success && result.data) {
-        setAllFilters(result.data)
-
-        // Group filters by name to deduplicate display
-        const filtersByName = new Map<string, GroupedFilter>()
-
-        result.data.forEach(filter => {
-          if (!filtersByName.has(filter.name)) {
-            filtersByName.set(filter.name, {
-              name: filter.name,
-              level: filter.level,
-              filterIds: [filter.id],
-              isActive: filter.isActive,
-              isFeatured: filter.isFeatured
-            })
-          } else {
-            const existing = filtersByName.get(filter.name)!
-            existing.filterIds.push(filter.id)
-            // If any instance is active or featured, consider it active/featured
-            existing.isActive = existing.isActive || filter.isActive
-            existing.isFeatured = existing.isFeatured || filter.isFeatured
-          }
-        })
-
-        // Sort by level first, then by name
-        const grouped = Array.from(filtersByName.values()).sort((a, b) => {
-          if (a.level !== b.level) return a.level - b.level
-          return a.name.localeCompare(b.name)
-        })
-
-        setGroupedFilters(grouped)
+        setRootCategories(result.data)
       }
     })
   }, [])
 
-  // Fetch products when selected filters change
+  // Fetch products when selected categories change
   useEffect(() => {
-    if (selectedFilterIds.size > 0) {
-      const filterIdsArray = Array.from(selectedFilterIds)
+    if (selectedCategoryIds.size > 0) {
+      const categoryIdsArray = Array.from(selectedCategoryIds)
       // Fetch product IDs for filtering existing sections
-      getProductsByFiltersAction(filterIdsArray).then((result) => {
+      getProductsByCategoriesAction(categoryIdsArray, true).then((result) => {
         if (result.success && result.data) {
           setFilteredProductIds(result.data)
         }
       })
       // Fetch full product objects for dedicated filtered section
-      getFullProductsByFiltersAction(filterIdsArray).then((result) => {
+      getFullProductsByCategoriesAction(categoryIdsArray).then((result) => {
         if (result.success && result.data) {
           setFilteredProducts(result.data)
         }
@@ -202,91 +164,38 @@ export default function HomePageClient({
       setFilteredProductIds([])
       setFilteredProducts([])
     }
-  }, [selectedFilterIds])
+  }, [selectedCategoryIds])
 
-  const toggleGroupedFilter = async (groupedFilter: GroupedFilter) => {
-    const newSelected = new Set(selectedFilterIds)
-
-    // Check if any of the filter IDs in this group are selected
-    const anySelected = groupedFilter.filterIds.some(id => newSelected.has(id))
-
-    if (anySelected) {
-      // Deselecting: remove this filter and all items that have it as a parent
-      const deselectedIds = new Set<string>()
-      for (const filterId of groupedFilter.filterIds) {
-        newSelected.delete(filterId)
-        deselectedIds.add(filterId)
-      }
-
-      // Remove all items that have the deselected filter as a parent
-      const allSelectedArray = Array.from(newSelected)
-      const filtersToRemove = new Set<string>()
-
-      for (const selectedId of allSelectedArray) {
-        const parentsResult = await getAllParentFilterIdsAction(selectedId)
-        if (parentsResult.success && parentsResult.data) {
-          // Check if this filter has any of the deselected filters as a parent
-          const hasDeselectedParent = parentsResult.data.some(parentId => deselectedIds.has(parentId))
-
-          if (hasDeselectedParent) {
-            // This filter has a deselected parent
-            // Get the parent's level to determine if we should remove this item
-            // First, collect all parent filters with their levels
-            const parentFiltersWithLevels = parentsResult.data.map(parentId => {
-              const parentFilter = allFilters.find(f => f.id === parentId)
-              return parentFilter ? { id: parentId, level: parentFilter.level } : null
-            }).filter(p => p !== null)
-
-            // Get level-0 parents only
-            const level0ParentIds = parentFiltersWithLevels
-              .filter(p => p!.level === 0)
-              .map(p => p!.id)
-
-            // Check if any level-0 parents are still selected
-            const hasSelectedLevel0Parent = level0ParentIds.some(parentId => newSelected.has(parentId))
-
-            if (!hasSelectedLevel0Parent && level0ParentIds.length > 0) {
-              // Has level-0 parents but none are selected anymore, remove it
-              filtersToRemove.add(selectedId)
-            }
-          } else if (parentsResult.data.length > 0) {
-            // Only check for orphaned items if they actually have parents
-            // Top-level items (with no parents) should remain selected
-            const hasSelectedParent = parentsResult.data.some(parentId => newSelected.has(parentId))
-            if (!hasSelectedParent) {
-              filtersToRemove.add(selectedId)
-            }
-          }
-        }
-      }
-
-      // Remove filters that should be deselected
-      filtersToRemove.forEach(id => newSelected.delete(id))
+  // Handle clicking a root category - expand/collapse to show children
+  const handleRootCategoryClick = async (category: Category) => {
+    if (expandedCategoryId === category.id) {
+      // Clicking the same root category - collapse it
+      setExpandedCategoryId(null)
+      setChildCategories([])
     } else {
-      // Selecting: add all filter IDs in this group, their parents, and their children
-      for (const filterId of groupedFilter.filterIds) {
-        newSelected.add(filterId)
-
-        // Get all parent filter IDs and add them
-        const parentsResult = await getAllParentFilterIdsAction(filterId)
-        if (parentsResult.success && parentsResult.data) {
-          parentsResult.data.forEach((parentId) => newSelected.add(parentId))
-        }
-
-        // Get all child filter IDs and add them
-        const childrenResult = await getAllChildFilterIdsAction(filterId)
-        if (childrenResult.success && childrenResult.data) {
-          childrenResult.data.forEach((childId) => newSelected.add(childId))
-        }
+      // Clicking a different root category - expand it and load children
+      setExpandedCategoryId(category.id)
+      const result = await getChildCategoriesWithDescendantCountsAction(category.id)
+      if (result.success && result.data) {
+        setChildCategories(result.data)
       }
     }
-
-    setSelectedFilterIds(newSelected)
   }
 
-  // Filter products based on selected filters
+  // Handle selecting/deselecting a category (for filtering)
+  const toggleCategorySelection = (categoryId: string) => {
+    const newSelected = new Set(selectedCategoryIds)
+    if (newSelected.has(categoryId)) {
+      newSelected.delete(categoryId)
+    } else {
+      newSelected.add(categoryId)
+    }
+    setSelectedCategoryIds(newSelected)
+  }
+
+  // Filter products based on selected categories
   const filterProducts = (products: ProductWithVariants[]) => {
-    if (selectedFilterIds.size === 0) {
+    if (selectedCategoryIds.size === 0) {
       return products
     }
     return products.filter(product => filteredProductIds.includes(product.id))
@@ -454,98 +363,112 @@ export default function HomePageClient({
       <section className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Filter by Category</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Shop by Category</h3>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowAdvancedDialog(true)}
-                className="px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700 transition-colors font-medium text-sm flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-                Advanced Filters
-              </button>
-              {selectedFilterIds.size > 0 && (
+              {selectedCategoryIds.size > 0 && (
                 <button
-                  onClick={() => setSelectedFilterIds(new Set())}
+                  onClick={() => setSelectedCategoryIds(new Set())}
                   className="text-sm text-navy-600 hover:text-navy-700 font-medium"
                 >
-                  Clear All ({selectedFilterIds.size} selected)
+                  Clear All ({selectedCategoryIds.size} selected)
                 </button>
               )}
             </div>
           </div>
 
-          {/* Category Chips */}
+          {/* Root Category Chips - Ladies, Gents, Kids */}
           <div className="flex flex-wrap gap-3">
-            {groupedFilters.map((groupedFilter) => {
-              // Check if any of the filter IDs in this group are selected
-              const isSelected = groupedFilter.filterIds.some(id => selectedFilterIds.has(id))
-
-              // Level-based styling
-              const levelStyles = {
-                0: 'text-base font-bold',
-                1: 'text-sm font-semibold',
-                2: 'text-sm font-medium'
-              }
-              const levelStyle = levelStyles[groupedFilter.level as keyof typeof levelStyles] || 'text-sm'
+            {rootCategories.map((category) => {
+              const isExpanded = expandedCategoryId === category.id
 
               return (
                 <button
-                  key={groupedFilter.name}
-                  onClick={() => toggleGroupedFilter(groupedFilter)}
+                  key={category.id}
+                  onClick={() => handleRootCategoryClick(category)}
                   className={`
                     px-4 py-2 rounded-full transition-all duration-200
-                    flex items-center gap-2
-                    ${levelStyle}
+                    flex items-center gap-2 text-base font-bold
                     ${
-                      isSelected
+                      isExpanded
                         ? 'bg-navy-600 text-white shadow-md transform scale-105'
-                        : groupedFilter.isActive
-                        ? 'bg-white text-gray-700 border-2 border-gray-200 hover:border-navy-400 hover:text-navy-600'
-                        : 'bg-gray-100 text-gray-400 border-2 border-gray-100 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-navy-400 hover:text-navy-600'
                     }
                   `}
-                  disabled={!groupedFilter.isActive}
                 >
-                  <span>{groupedFilter.name}</span>
+                  <span>{category.name}</span>
 
-                  {/* Level indicator badge */}
-                  {groupedFilter.level > 0 && (
+                  {/* Product count badge */}
+                  {category.productCount !== undefined && category.productCount > 0 && (
                     <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      isSelected
-                        ? 'bg-navy-500 text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      L{groupedFilter.level}
-                    </span>
-                  )}
-
-                  {/* Show count if multiple filter IDs */}
-                  {groupedFilter.filterIds.length > 1 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      isSelected
+                      isExpanded
                         ? 'bg-navy-500 text-white'
                         : 'bg-blue-100 text-blue-700'
                     }`}>
-                      ×{groupedFilter.filterIds.length}
+                      {category.productCount}
                     </span>
                   )}
 
-                  {!groupedFilter.isActive && (
-                    <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded">
-                      Inactive
-                    </span>
-                  )}
+                  {/* Expand/Collapse indicator */}
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
               )
             })}
           </div>
+
+          {/* Subcategory Chips - Show when root category is expanded */}
+          {expandedCategoryId && childCategories.length > 0 && (
+            <div className="mt-4 pl-6 border-l-4 border-navy-300">
+              <h4 className="text-sm font-semibold text-gray-600 mb-3">
+                Subcategories (click to filter):
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {childCategories.map((childCategory) => {
+                  const isSelected = selectedCategoryIds.has(childCategory.id)
+
+                  return (
+                    <button
+                      key={childCategory.id}
+                      onClick={() => toggleCategorySelection(childCategory.id)}
+                      className={`
+                        px-3 py-1.5 rounded-full transition-all duration-200
+                        flex items-center gap-2 text-sm font-medium
+                        ${
+                          isSelected
+                            ? 'bg-navy-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 border border-gray-300 hover:border-navy-400 hover:text-navy-600'
+                        }
+                      `}
+                    >
+                      <span>{childCategory.name}</span>
+
+                      {/* Product count badge */}
+                      {childCategory.productCount !== undefined && childCategory.productCount > 0 && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          isSelected
+                            ? 'bg-navy-400 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          {childCategory.productCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Filtered Products Section - Show when filters are active */}
-      {selectedFilterIds.size > 0 && filteredProducts.length > 0 && (
+      {/* Filtered Products Section - Show when categories are selected */}
+      {selectedCategoryIds.size > 0 && filteredProducts.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -701,14 +624,6 @@ export default function HomePageClient({
           </div>
         </section>
       )}
-
-      {/* Advanced Filter Dialog */}
-      <AdvancedFilterDialog
-        isOpen={showAdvancedDialog}
-        onClose={() => setShowAdvancedDialog(false)}
-        selectedFilterIds={selectedFilterIds}
-        onApplyFilters={setSelectedFilterIds}
-      />
     </main>
   )
 }

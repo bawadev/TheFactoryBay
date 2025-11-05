@@ -129,13 +129,13 @@ export async function createCategory(
 }
 
 /**
- * Get all root categories (Ladies, Gents, Kids)
+ * Get all root categories (Ladies, Gents, Kids) with descendant product counts
  */
 export async function getRootCategories(session: Session): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category)
      WHERE c.level = 0
-     OPTIONAL MATCH (p:Product)-[:HAS_CATEGORY]->(c)
+     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
      ORDER BY
@@ -159,6 +159,25 @@ export async function getChildCategories(
   const result = await session.run(
     `MATCH (c:Category)-[:CHILD_OF]->(parent:Category {id: $parentId})
      OPTIONAL MATCH (p:Product)-[:HAS_CATEGORY]->(c)
+     WITH c, count(DISTINCT p) as productCount
+     RETURN c {.*, productCount: productCount}
+     ORDER BY c.name`,
+    { parentId }
+  )
+
+  return result.records.map(record => convertNeo4jIntegers(record.get('c')))
+}
+
+/**
+ * Get child categories with descendant product counts (rolls up from all sub-levels)
+ */
+export async function getChildCategoriesWithDescendantCounts(
+  session: Session,
+  parentId: string
+): Promise<Category[]> {
+  const result = await session.run(
+    `MATCH (c:Category)-[:CHILD_OF]->(parent:Category {id: $parentId})
+     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
      ORDER BY c.name`,
@@ -197,7 +216,7 @@ export async function getCategoryTree(session: Session): Promise<CategoryTree> {
   // Get all categories with product counts including all descendants recursively
   const result = await session.run(
     `MATCH (c:Category)
-     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)-[:HAS_PRODUCT]->(p:Product)
+     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c.id as id,
             c.name as name,
@@ -279,7 +298,7 @@ export async function getCategoriesByHierarchy(
 ): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category {hierarchy: $hierarchy})
-     OPTIONAL MATCH (c)-[:HAS_PRODUCT]->(p:Product)
+     OPTIONAL MATCH (p:Product)-[:HAS_CATEGORY]->(c)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
      ORDER BY c.level, c.name`,
@@ -559,10 +578,10 @@ export async function getProductsByCategories(
        OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)
        WITH collect(DISTINCT descendant.id) + collect(DISTINCT c.id) as allCategoryIds
        UNWIND allCategoryIds as catId
-       MATCH (cat:Category {id: catId})-[:HAS_PRODUCT]->(p:Product)
+       MATCH (p:Product)-[:HAS_CATEGORY]->(cat:Category {id: catId})
        RETURN DISTINCT p.id as productId`
     : `UNWIND $categoryIds as categoryId
-       MATCH (c:Category {id: categoryId})-[:HAS_PRODUCT]->(p:Product)
+       MATCH (p:Product)-[:HAS_CATEGORY]->(c:Category {id: categoryId})
        RETURN DISTINCT p.id as productId`
 
   const result = await session.run(query, { categoryIds })
@@ -570,12 +589,12 @@ export async function getProductsByCategories(
 }
 
 /**
- * Get featured categories (for homepage)
+ * Get featured categories (for homepage) with descendant product counts
  */
 export async function getFeaturedCategories(session: Session): Promise<Category[]> {
   const result = await session.run(
     `MATCH (c:Category {isFeatured: true, isActive: true})
-     OPTIONAL MATCH (c)-[:HAS_PRODUCT]->(p:Product)
+     OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)<-[:HAS_CATEGORY]-(p:Product)
      WITH c, count(DISTINCT p) as productCount
      RETURN c {.*, productCount: productCount}
      ORDER BY c.level, c.name`

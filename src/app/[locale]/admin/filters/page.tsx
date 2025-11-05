@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation'
 import { isAdmin } from '@/lib/auth'
 import { getLocale } from 'next-intl/server'
-import { getAllFiltersTreeAction } from '@/app/actions/custom-filters'
-import CustomFiltersClient from './CustomFiltersClient'
+import { getCategoryTreeAction } from '@/app/actions/categories'
+import CategoriesClient from './CategoriesClient'
 
-export default async function CustomFiltersPage() {
+export default async function CategoriesPage() {
   const adminAccess = await isAdmin()
   const locale = await getLocale()
 
@@ -12,8 +12,8 @@ export default async function CustomFiltersPage() {
     redirect(`/${locale}/login?redirect=/${locale}/admin/filters`)
   }
 
-  const result = await getAllFiltersTreeAction()
-  const filters = result.data || []
+  const result = await getCategoryTreeAction()
+  const categories = result.data || { ladies: [], gents: [], kids: [] }
 
-  return <CustomFiltersClient initialFilters={filters} />
+  return <CategoriesClient initialCategories={categories} />
 }

@@ -10,6 +10,7 @@
     "db:init": "tsx scripts/init-db.ts",
     "db:seed": "tsx scripts/seed-db.ts",
     "db:clear": "tsx scripts/clear-db.ts",
+    "db:cleanup": "tsx scripts/cleanup-database.ts",
     "setup:filters": "tsx scripts/setup-graph-hierarchy.ts",
     "filters:setup": "tsx scripts/setup-default-filters.ts",
     "filters:assign": "tsx scripts/assign-products-to-filters.ts",
@@ -17,7 +18,8 @@
     "filters:validate": "tsx scripts/validate-filters.ts",
     "filters:recalculate": "tsx scripts/recalculate-levels.ts",
     "filters:seed": "tsx scripts/seed-default-filters.ts",
-    "minio:init": "tsx scripts/init-minio.ts"
+    "minio:init": "tsx scripts/init-minio.ts",
+    "setup:categories": "tsx scripts/setup-category-hierarchy.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

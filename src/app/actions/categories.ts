@@ -140,6 +140,24 @@ export async function getChildCategoriesAction(parentId: string) {
 }
 
 /**
+ * Get child categories with descendant product counts (rolls up from all sub-levels)
+ */
+export async function getChildCategoriesWithDescendantCountsAction(parentId: string) {
+  const session = getSession()
+  try {
+    const categories = await categoryRepo.getChildCategoriesWithDescendantCounts(session, parentId)
+    // Convert Neo4j Integers to plain numbers for Client Components
+    const sanitizedCategories = convertNeo4jIntegers(categories)
+    return { success: true, data: sanitizedCategories }
+  } catch (error: any) {
+    console.error('Error fetching child categories with descendant counts:', error)
+    return { success: false, error: error.message }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
  * Get featured categories
  */
 export async function getFeaturedCategoriesAction() {
@@ -309,7 +327,7 @@ export async function getFullProductsByCategoriesAction(categoryIds: string[]) {
        OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)
        WITH collect(DISTINCT descendant.id) + collect(DISTINCT c.id) as allCategoryIds
        UNWIND allCategoryIds as catId
-       MATCH (cat:Category {id: catId})-[:HAS_PRODUCT]->(p:Product)
+       MATCH (p:Product)-[:HAS_CATEGORY]->(cat:Category {id: catId})
        WITH DISTINCT p
        OPTIONAL MATCH (v:ProductVariant)-[:VARIANT_OF]->(p)
        WITH p, collect(v {.*}) as variants
