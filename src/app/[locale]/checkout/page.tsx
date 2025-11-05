@@ -22,7 +22,9 @@ export default async function CheckoutPage() {
   if (token) {
     try {
       const payload = await verifyToken(token.value)
-      userEmail = payload.email
+      if (payload) {
+        userEmail = payload.email
+      }
     } catch {
       // Invalid token, treat as guest
       userEmail = undefined

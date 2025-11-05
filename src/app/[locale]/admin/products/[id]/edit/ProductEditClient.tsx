@@ -32,7 +32,7 @@ export default function ProductEditClient({ product }: ProductEditClientProps) {
   const [name, setName] = useState(product.name)
   const [description, setDescription] = useState(product.description)
   const [brand, setBrand] = useState(product.brand)
-  const [category, setCategory] = useState<ProductCategory>(product.category)
+  const [category, setCategory] = useState<ProductCategory | undefined>(product.category)
   const [gender, setGender] = useState<ProductGender>(product.gender)
   const [stockPrice, setStockPrice] = useState(product.stockPrice.toString())
   const [retailPrice, setRetailPrice] = useState(product.retailPrice.toString())
@@ -260,10 +260,11 @@ export default function ProductEditClient({ product }: ProductEditClientProps) {
                 </label>
                 <select
                   id="category"
-                  value={category}
+                  value={category || ''}
                   onChange={(e) => setCategory(e.target.value as ProductCategory)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-navy-600 focus:border-transparent"
                 >
+                  <option value="">Select a category</option>
                   {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}

@@ -26,7 +26,7 @@ import {
 } from '@/app/actions/categories'
 import { getProductFiltersAction } from '@/app/actions/custom-filters'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
-import type { ProductCategory, ProductGender, Product, PromotionalCategory } from '@/lib/types'
+import type { ProductCategory, ProductGender, Product, PromotionalCategory, SizeOption } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import CategoryPickerDialog from '@/components/category/CategoryPickerDialog'
 import FilterPickerDialog from '@/components/filters/FilterPickerDialog'
@@ -50,13 +50,14 @@ type FormData = {
 
 type VariantFormData = {
   id?: string // For editing existing variants
-  size: string
+  size: SizeOption
   color: string
   stockQuantity: number
 }
 
 const CATEGORIES: ProductCategory[] = ['SHIRT', 'PANTS', 'JACKET', 'DRESS', 'SHOES', 'ACCESSORIES']
 const GENDERS: ProductGender[] = ['MEN', 'WOMEN', 'UNISEX']
+const SIZES: SizeOption[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
 export default function AdminProductsClient({ products: initialProducts }: AdminProductsClientProps) {
   const locale = useLocale()
@@ -126,7 +127,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   const [variants, setVariants] = useState<VariantFormData[]>([])
   const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null)
   const [variantForm, setVariantForm] = useState<VariantFormData>({
-    size: '',
+    size: 'M',
     color: '',
     stockQuantity: 0
   })
@@ -447,7 +448,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       sku: '',
     })
     setVariants([])
-    setVariantForm({ size: '', color: '', stockQuantity: 0 })
+    setVariantForm({ size: 'M', color: '', stockQuantity: 0 })
     setShowVariantForm(false)
     setEditingVariantIndex(null)
     setDuplicateWarning(null)
@@ -576,7 +577,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
   // Variant management functions
   const handleAddVariant = () => {
-    if (!variantForm.size.trim() || !variantForm.color.trim()) {
+    if (!variantForm.size || !variantForm.color.trim()) {
       alert('Please fill in size and color')
       return
     }
@@ -598,7 +599,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     }
 
     // Reset variant form
-    setVariantForm({ size: '', color: '', stockQuantity: 0 })
+    setVariantForm({ size: 'M', color: '', stockQuantity: 0 })
     setShowVariantForm(false)
   }
 
@@ -615,7 +616,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
   }
 
   const handleCancelVariantForm = () => {
-    setVariantForm({ size: '', color: '', stockQuantity: 0 })
+    setVariantForm({ size: 'M', color: '', stockQuantity: 0 })
     setShowVariantForm(false)
     setEditingVariantIndex(null)
   }
@@ -1274,13 +1275,17 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Size *</label>
-                      <input
-                        type="text"
+                      <select
                         value={variantForm.size}
-                        onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })}
+                        onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value as SizeOption })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="e.g., S, M, L, XL"
-                      />
+                      >
+                        {SIZES.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Color *</label>

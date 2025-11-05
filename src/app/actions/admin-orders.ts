@@ -6,8 +6,7 @@ import {
   updateOrderStatus,
   type OrderWithItems,
 } from '@/lib/repositories/order.repository'
-import type { ActionResponse } from './types'
-import type { OrderStatus } from '@/lib/types'
+import type { ActionResponse, OrderStatus } from '@/lib/types'
 
 /**
  * Get all orders for admin view

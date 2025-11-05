@@ -2,240 +2,308 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Overview
 
-Factory Bay is a modern e-commerce platform for branded clothing at stock prices. Built with Next.js 15 (App Router), TypeScript, Neo4j graph database, and Tailwind CSS. The platform uses Neo4j's graph capabilities for intelligent product recommendations based on user behavior, preferences, and measurements.
+Factory Bay is a modern e-commerce platform for branded clothing at wholesale prices. Built with Next.js 15 (App Router), TypeScript, Neo4j graph database, and MinIO for object storage. The platform features internationalization (i18n) with English and Sinhala support.
 
-## Development Commands
+## Essential Commands
 
-### Running the Application
+### Development
 ```bash
-npm run dev          # Start development server (localhost:3000)
-npm run build        # Create production build
-npm run start        # Start production server
-npm run lint         # Run ESLint
+# Recommended: Use dev.sh to manage all services together
+./dev.sh start         # Start Neo4j, MinIO, and Next.js
+./dev.sh stop          # Stop all services
+./dev.sh status        # Check status
+./dev.sh logs <service> # View logs (nextjs, neo4j, minio)
+
+# Alternative: Manual start
+docker compose up -d   # Start Neo4j & MinIO only
+npm run dev            # Run Next.js separately
+```
+
+### Build & Production
+```bash
+npm run build              # Create production build
+npm run start              # Start production server
+npm run lint               # Run ESLint
 ```
 
 ### Database Management
 ```bash
-npm run db:init      # Initialize Neo4j schema (constraints/indexes)
-npm run db:seed      # Seed database with sample data
-npm run db:clear     # Clear all database data (WARNING: destructive)
+npm run db:init            # Initialize Neo4j schema (constraints & indexes)
+npm run db:seed            # Seed database with sample data
+npm run db:clear           # Clear all database data
+
+# Category & Filter System
+npm run setup:filters      # Setup graph hierarchy for categories
+npm run filters:init       # Initialize custom filter system
+npm run filters:validate   # Validate filter relationships
+npm run filters:recalculate # Recalculate filter levels
 ```
 
-The database scripts are in `scripts/` and use `tsx` for TypeScript execution.
+### MinIO Setup
+```bash
+npm run minio:init         # Initialize MinIO bucket
+```
 
-### Testing
-- Neo4j Browser: http://localhost:7474 (username: neo4j, password: factorybay123)
-- To test database connection: Run `npm run db:init`
+### Docker Services
+```bash
+docker compose up -d       # Start Neo4j and MinIO
+docker compose down        # Stop services
+docker compose logs -f neo4j   # View Neo4j logs
+docker compose logs -f minio   # View MinIO logs
+```
 
-## High-Level Architecture
+## Architecture Overview
 
 ### Tech Stack
-- **Frontend**: Next.js 15 with App Router, React 19, TypeScript 5.7
-- **Styling**: Tailwind CSS 3.4 with custom design system (see STYLE_GUIDE.md)
-- **Database**: Neo4j 5.26 (graph database for relationships and recommendations)
-- **Authentication**: JWT tokens stored in httpOnly cookies, bcrypt password hashing
-- **Server Actions**: All backend logic uses Next.js Server Actions in `src/app/actions/`
-- **Internationalization**: next-intl with locale routing (`/en`, `/si`)
+- **Frontend:** Next.js 15.1.4 (App Router), React 19, TypeScript 5.7
+- **Styling:** Tailwind CSS 3.4, Framer Motion 11.15
+- **Database:** Neo4j 5.26 (Graph Database)
+- **Storage:** MinIO (S3-compatible object storage)
+- **Auth:** JWT tokens in httpOnly cookies
+- **i18n:** next-intl with English and Sinhala locales
 
 ### Project Structure
 ```
 src/
-├── app/                          # Next.js App Router
-│   ├── actions/                  # Server Actions (backend logic)
-│   │   ├── auth.ts              # Authentication
-│   │   ├── cart.ts              # Shopping cart operations
-│   │   ├── order.ts             # Order placement
-│   │   ├── products.ts          # Product fetching
-│   │   ├── admin-*.ts           # Admin operations
-│   │   └── user-profile.ts      # User preferences/measurements
-│   ├── [locale]/                # Internationalized routes
-│   │   ├── page.tsx             # Homepage
-│   │   ├── shop/                # Product catalog
-│   │   ├── product/[id]/        # Product details
-│   │   ├── cart/                # Shopping cart
-│   │   ├── checkout/            # Order checkout
-│   │   ├── orders/              # Order history
-│   │   ├── profile/             # User profile/measurements
-│   │   ├── admin/               # Admin panel
-│   │   ├── login/ & signup/     # Authentication pages
-│   │   └── HomePageClient.tsx   # Client component for homepage
-│   └── layout.tsx               # Root layout
-├── lib/                          # Core utilities
-│   ├── db.ts                    # Neo4j driver & connection
-│   ├── auth.ts                  # Auth utilities (JWT, bcrypt)
-│   ├── types.ts                 # TypeScript type definitions
-│   ├── guest-cart.ts            # Guest cart handling
-│   └── repositories/            # Database operations (Repository pattern)
+├── app/
+│   ├── [locale]/              # Internationalized routes
+│   │   ├── page.tsx           # Homepage
+│   │   ├── shop/              # Product catalog
+│   │   ├── cart/              # Shopping cart
+│   │   ├── checkout/          # Checkout flow
+│   │   ├── order/             # Order confirmation & payment
+│   │   ├── profile/           # User profile
+│   │   ├── login/             # Authentication
+│   │   ├── signup/
+│   │   └── admin/             # Admin panel
+│   │       ├── products/      # Product management
+│   │       ├── orders/        # Order management
+│   │       ├── inventory/     # Inventory tracking
+│   │       ├── categories/    # Category management
+│   │       ├── filters/       # Custom filter management
+│   │       └── sections/      # Promotional sections
+│   └── actions/               # Server Actions (API layer)
+│       ├── auth.ts
+│       ├── products.ts
+│       ├── cart.ts
+│       ├── order.ts
+│       ├── categories.ts
+│       ├── custom-filters.ts
+│       ├── admin-products.ts
+│       └── admin-orders.ts
+├── components/
+│   ├── ui/                    # Reusable UI components
+│   └── admin/                 # Admin-specific components
+├── lib/
+│   ├── db.ts                  # Neo4j driver & connection
+│   ├── auth.ts                # JWT & password utilities
+│   ├── minio.ts               # MinIO client & file operations
+│   ├── schema.ts              # Database schema initialization
+│   ├── types.ts               # TypeScript type definitions
+│   ├── guest-cart.ts          # Guest shopping cart logic
+│   └── repositories/          # Data access layer
 │       ├── user.repository.ts
 │       ├── product.repository.ts
+│       ├── category.repository.ts
+│       ├── custom-filter.repository.ts
 │       ├── cart.repository.ts
 │       ├── order.repository.ts
-│       ├── recommendation.repository.ts
-│       └── user-profile.repository.ts
-├── components/                   # React components
-│   ├── ui/                      # Reusable UI components
-│   ├── layout/                  # Layout components (Navigation)
-│   ├── cart/                    # Cart-specific components
-│   └── products/                # Product components
-└── i18n/                        # Internationalization config
+│       ├── promotional-category.repository.ts
+│       ├── user-profile.repository.ts
+│       ├── browsing-history.repository.ts
+│       └── recommendation.repository.ts
+├── i18n/
+│   └── request.ts             # i18n configuration
+├── middleware.ts              # next-intl locale handling
+└── messages/
+    ├── en.json                # English translations
+    └── si.json                # Sinhala translations
 ```
 
-### Database Architecture (Neo4j)
+## Database Architecture
 
-**Key Design Principle**: Neo4j is used specifically for modeling relationships between users, products, orders, and generating recommendations through graph traversals.
+### Neo4j Graph Model
 
-#### Node Types
-- **User**: Customer/admin accounts with authentication
-- **Product**: Main product entity (brand, category, prices)
-- **ProductVariant**: Size/color variants with stock quantities and images
-- **Order**: Customer orders with status tracking
-- **OrderItem**: Individual items in an order
-- **CartItem**: Shopping cart entries
-- **UserPreference**: Brand/color/category preferences
-- **UserMeasurements**: Body measurements for size recommendations
+Factory Bay uses Neo4j to model complex relationships between users, products, orders, and preferences.
 
-#### Key Relationships
-- `(User)-[:PLACED_ORDER]->(Order)`
-- `(User)-[:HAS_IN_CART]->(CartItem)`
-- `(User)-[:VIEWED]->(Product)` - For tracking browsing history
-- `(User)-[:PURCHASED]->(Product)` - For collaborative filtering
-- `(ProductVariant)-[:VARIANT_OF]->(Product)`
-- `(Order)-[:CONTAINS]->(OrderItem)-[:OF_VARIANT]->(ProductVariant)`
+**Key Node Types:**
+- `User` - Customers and admins
+- `Product` - Product information (brand, price, SKU)
+- `ProductVariant` - Size/color variants with stock
+- `Order` - Order records
+- `Category` - Single-parent category hierarchy (Ladies/Gents/Kids)
+- `CustomFilter` - Multi-parent filter system for product discovery
+- `PromotionalCategory` - Time-limited promotional collections
 
-#### Repository Pattern
-All database operations are encapsulated in repository classes in `src/lib/repositories/`. Each repository handles a specific domain (users, products, cart, orders, etc.) and exports functions that take a Neo4j session and return typed results.
+**Important Relationships:**
+- `(ProductVariant)-[:VARIANT_OF]->(Product)` - Variant belongs to product
+- `(User)-[:HAS_CART_ITEM]->(ProductVariant)` - Shopping cart
+- `(Order)-[:CONTAINS]->(ProductVariant)` - Order items
+- `(Product)-[:TAGGED_WITH]->(CustomFilter)` - Products linked to filters
+- `(CustomFilter)-[:CHILD_OF]->(CustomFilter)` - Multi-parent filter hierarchy
+- `(Category)-[:CHILD_OF]->(Category)` - Single-parent category tree
 
-Example pattern:
+**Schema Management:**
+- Constraints ensure uniqueness (emails, SKUs, order numbers)
+- Indexes optimize queries (categories, brands, prices)
+- All managed in `src/lib/schema.ts`
+
+### Category vs. Filter System
+
+**Categories (Single-Parent Hierarchy):**
+- Each category has exactly ONE parent
+- Three root hierarchies: Ladies, Gents, Kids
+- Structure: Root (L0) → Clothing/Footwear (L1) → Tops/Bottoms (L2) → Shirts/Blouses (L3)
+- Products SHOULD be assigned to leaf categories only
+- Located in: `src/lib/repositories/category.repository.ts`
+
+**Custom Filters (Multi-Parent Graph):**
+- Filters can have MULTIPLE parents
+- Flexible tagging system for product discovery
+- Cycle prevention automatically enforced
+- Products linked via `TAGGED_WITH` relationship
+- Enables complex filtering (e.g., "Summer" + "Casual" + "Red")
+- Located in: `src/lib/repositories/custom-filter.repository.ts`
+
+**IMPORTANT:** The legacy `Product.category` field is DEPRECATED. Use the filter system (`TAGGED_WITH` relationships) instead.
+
+## Key Implementation Patterns
+
+### Repository Pattern
+All database operations are encapsulated in repository files under `src/lib/repositories/`. Each repository provides a clean API for a specific domain entity.
+
+**Example:**
 ```typescript
-export async function functionName(session: Session, params: Type): Promise<ReturnType> {
-  const result = await session.run('CYPHER QUERY', params)
-  return result.records.map(record => record.toObject())
-}
+// src/lib/repositories/product.repository.ts
+export async function getAllProducts(filters?: ProductFilters): Promise<ProductWithVariants[]>
+export async function getProductById(id: string): Promise<ProductWithVariants | null>
+export async function createProduct(input: CreateProductInput): Promise<Product>
 ```
+
+### Server Actions
+Next.js Server Actions in `src/app/actions/` provide the API layer. They:
+- Handle authentication/authorization
+- Call repository functions
+- Return standardized `ActionResponse<T>` objects
+- Run on the server with direct database access
 
 ### Authentication Flow
+1. JWT tokens stored in httpOnly cookies (security best practice)
+2. `getCurrentUser()` from `src/lib/auth.ts` retrieves current user
+3. Password requirements: min 8 chars, 1 uppercase, 1 number
+4. Role-based access: `CUSTOMER` or `ADMIN`
 
-1. **Login/Signup**: Server Actions in `src/app/actions/auth.ts`
-2. **Password hashing**: bcrypt with salt rounds = 12
-3. **Token generation**: JWT with 7-day expiry
-4. **Storage**: httpOnly cookies (secure in production)
-5. **Session retrieval**: `getCurrentUser()` from `src/lib/auth.ts`
-6. **Protection**: Middleware checks authentication but primarily uses next-intl for locale routing
+### Image Upload Flow
+1. Images uploaded through Server Actions (`src/app/actions/upload.ts`)
+2. Automatically converted to WebP format for optimization (via Sharp)
+3. Stored in MinIO with public read access
+4. URLs returned: `http://localhost:9000/product-images/{timestamp}-{filename}.webp`
 
-**Important**: Auth is handled via server-side functions. Use `getCurrentUser()` to get current user in Server Actions or Server Components.
+### Internationalization (i18n)
+- All routes prefixed with locale: `/en/shop`, `/si/shop`
+- Middleware handles locale detection (`src/middleware.ts`)
+- Translations in `messages/en.json` and `messages/si.json`
+- Use `useTranslations()` hook in client components
+- Server components: import translations via `getTranslations()`
 
-### Server Actions Pattern
+### Client/Server Component Pattern
+- Server components: `page.tsx` files (fetch data, handle auth)
+- Client components: `*Client.tsx` files (interactivity, state)
+- This pattern enables server-side data fetching with client-side interactivity
 
-All backend logic uses Next.js Server Actions (functions marked with `'use server'`). These are called directly from Client Components and handle:
-- Database queries via repositories
-- Authentication checks
-- Form submissions
-- Data mutations
+## Important Considerations
 
-Pattern:
-```typescript
-'use server'
-export async function actionName(formData: FormData) {
-  const session = getSession()
-  try {
-    // Auth check if needed
-    const user = await getCurrentUser()
+### TypeScript Build Configuration
+- Next.js config temporarily disables type checking during build (`next.config.ts:6`)
+- This is a workaround for React 19 compatibility issues
+- Always run `npm run lint` before committing to catch type errors
 
-    // Call repository functions
-    const result = await repository.function(session, params)
+### Neo4j Integer Handling
+Neo4j returns integers as objects with `low` and `high` properties. The `convertNeo4jIntegers()` utility in `category.repository.ts` handles conversion to JavaScript numbers. Use this pattern when working with Neo4j integers.
 
-    return { success: true, data: result }
-  } catch (error) {
-    return { success: false, error: error.message }
-  } finally {
-    await session.close()
-  }
-}
+### Filter System Cycle Prevention
+When updating filter parent relationships, cycles must be prevented. The `custom-filter.repository.ts` includes validation to ensure no filter can become an ancestor of itself.
+
+### Image Optimization
+All uploaded images are automatically converted to WebP format (except SVGs) for optimal performance. Original formats are not preserved. Ensure clients understand this behavior.
+
+### Guest Cart vs. User Cart
+- Guest carts stored in localStorage (`src/lib/guest-cart.ts`)
+- User carts stored in Neo4j via `HAS_CART_ITEM` relationships
+- Cart migration happens on login (guest cart → user cart)
+
+## Development Workflow
+
+### Making Database Changes
+1. Update schema in `src/lib/schema.ts`
+2. Run `npm run db:init` to apply constraints/indexes
+3. Update relevant repository in `src/lib/repositories/`
+4. Update Server Actions in `src/app/actions/`
+5. Update TypeScript types in `src/lib/types.ts`
+
+### Adding New Features
+1. Define types in `src/lib/types.ts`
+2. Create repository functions for data access
+3. Create Server Actions for business logic
+4. Build UI components
+5. Integrate with existing pages
+
+### Testing Database Queries
+Use `tsx` to run TypeScript files directly:
+```bash
+tsx scripts/your-test-script.ts
 ```
 
-### Design System
+### Debugging
+- Neo4j Browser: http://localhost:7474 (neo4j/factorybay123)
+- MinIO Console: http://localhost:9001 (factorybay/factorybay123)
 
-The project has a comprehensive design system documented in `STYLE_GUIDE.md`. Key points:
+## Environment Variables
 
-#### Color Palette
-- **Primary**: Navy Blue (#2d6394) - Brand color
-- **Accent**: Gold (#e5c158) - Stock price highlights
-- **CTA**: Coral (#ff6b6b) - Call-to-action buttons
-- **Neutrals**: Gray scale for text and backgrounds
+Required variables in `.env.local`:
 
-#### Component Library
-All UI components in `src/components/ui/` follow the design system:
-- Buttons: Primary (coral), Secondary (navy outline), Ghost
-- Inputs: Consistent styling with validation states
-- Cards: Product cards with hover effects
+```env
+# Neo4j
+NEO4J_URI=neo4j://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=factorybay123
 
-#### Tailwind Configuration
-Custom colors and design tokens are defined in `tailwind.config.ts`. Always use these tokens rather than arbitrary values.
+# JWT
+JWT_SECRET=your-secure-random-string
 
-### Internationalization
+# MinIO
+MINIO_ENDPOINT=localhost
+MINIO_PORT=9000
+MINIO_ACCESS_KEY=factorybay
+MINIO_SECRET_KEY=factorybay123
+MINIO_BUCKET_NAME=product-images
+NEXT_PUBLIC_MINIO_URL=http://localhost:9000
 
-Uses `next-intl` with locale prefix routing:
-- Supported locales: English (`en`), Sinhala (`si`)
-- Routes are prefixed: `/en/shop`, `/si/shop`
-- Middleware in `src/middleware.ts` handles locale routing
-- Translation files would be in `messages/` directory
+# App
+NODE_ENV=development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-### Recommendation Engine
+## Common Pitfalls
 
-Located in `src/lib/repositories/recommendation.repository.ts`. Uses graph traversals to implement:
+1. **Forgetting to start Docker services** - Use `./dev.sh start` instead of just `npm run dev`
+2. **Using deprecated `Product.category` field** - Use custom filters (`TAGGED_WITH`) instead
+3. **Assigning products to non-leaf categories** - Products should only be in leaf categories
+4. **Not handling Neo4j integer conversion** - Always convert to JS numbers
+5. **Mixing guest and user cart logic** - These are separate systems
 
-1. **Collaborative Filtering**: Find products purchased by users with similar purchase history
-2. **Content-Based Filtering**: Match products to user preferences (brands, categories, colors)
-3. **Size Recommendations**: Use measurements to suggest appropriate sizes
+## Git Workflow
 
-The recommendation logic leverages Neo4j's graph traversal capabilities to efficiently query relationships.
+Current branch: `master`
+Recent focus: Glass morphism design system, Next.js 15 compatibility, type safety improvements
 
-## Key Development Patterns
+Many documentation files (MD files) have been deleted from git. Avoid recreating them unless explicitly requested.
 
-### When Adding New Features
+## Related Documentation
 
-1. **Database Operations**: Add new functions to appropriate repository in `src/lib/repositories/`
-2. **Server Actions**: Create or update actions in `src/app/actions/`
-3. **UI Components**: Follow design system in `STYLE_GUIDE.md`
-4. **Routes**: Add pages under `src/app/[locale]/` for internationalized routes
-5. **Types**: Update `src/lib/types.ts` for new TypeScript interfaces
-
-### Working with Neo4j
-
-- Always use parameterized queries to prevent Cypher injection
-- Close sessions in finally blocks
-- Use the repository pattern - don't write raw Cypher in Server Actions
-- Test queries in Neo4j Browser (http://localhost:7474) before implementing
-
-### File Uploads
-
-Product images are currently stored locally in `public/images/products/`. Path stored in Neo4j as string arrays on ProductVariant nodes. Migration path to cloud storage (Cloudinary/S3) is planned.
-
-### Environment Variables
-
-Required variables in `.env.local` (see `.env.example`):
-- `NEO4J_URI`: Neo4j connection string
-- `NEO4J_USER`: Database username
-- `NEO4J_PASSWORD`: Database password
-- `JWT_SECRET`: Secret for JWT signing
-- `NODE_ENV`: development/production
-- `NEXT_PUBLIC_APP_URL`: Application URL
-
-## Important Notes
-
-- **Path Aliases**: Use `@/*` to import from `src/` (configured in `tsconfig.json`)
-- **Mobile-First**: All components should be built mobile-first (see breakpoints in STYLE_GUIDE.md)
-- **TypeScript**: Strict mode enabled - all code must be properly typed
-- **No Payment Integration**: Orders are placed without payment (manual fulfillment workflow)
-- **Graph Database**: Neo4j is used specifically for relationships and recommendations, not as a general document store
-
-## Documentation Files
-
-- **README.md**: Project overview and quick start
-- **SPECIFICATION.md**: Complete technical specification and feature requirements
-- **STYLE_GUIDE.md**: Design system, components, colors, typography, animations
-- **SETUP.md**: Detailed setup instructions for Neo4j and environment
-- **PROGRESS.md**: Development progress tracking
-- **IMAGE_RESOURCES.md**: Image sourcing and management guidelines
+- `README.md` - Project overview and quick start
+- `STYLE_GUIDE.md` - Design system and component specifications
+- `docker-compose.yml` - Service configuration
+- `.env.example` - Environment variable template

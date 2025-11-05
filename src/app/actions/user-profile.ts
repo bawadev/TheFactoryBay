@@ -15,8 +15,7 @@ import {
   getRecommendationsForUser,
   getSimilarProducts,
 } from '@/lib/repositories/recommendation.repository'
-import type { ActionResponse } from './types'
-import type { UserPreference, UserMeasurements, ProductCategory, SizeOption, MeasurementUnit } from '@/lib/types'
+import type { ActionResponse, UserPreference, UserMeasurements, ProductCategory, SizeOption, MeasurementUnit } from '@/lib/types'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 
 /**

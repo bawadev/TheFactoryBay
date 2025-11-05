@@ -26,6 +26,12 @@ export async function uploadPaymentProofAction(
     let userId: string
     try {
       const payload = await verifyToken(token.value)
+      if (!payload) {
+        return {
+          success: false,
+          message: 'Invalid authentication token',
+        }
+      }
       userId = payload.userId
     } catch {
       return {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -73,6 +73,7 @@ export default function PromotionalCategoriesClient({
   >([])
   const [showAllMultiSection, setShowAllMultiSection] = useState(false)
   const router = useRouter()
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type, show: true })
@@ -208,20 +209,19 @@ export default function PromotionalCategoriesClient({
     setSearchQuery(value)
 
     // Clear existing timeout
-    if (typeof window !== 'undefined') {
-      const timeoutId = (window as any).searchTimeout
-      if (timeoutId) clearTimeout(timeoutId)
-
-      // Set new timeout for debounced search
-      (window as any).searchTimeout = setTimeout(() => {
-        if (value.trim().length >= 2) {
-          handleSearchProducts(value)
-        } else {
-          setSearchResults([])
-          setProductCategoryInfo({})
-        }
-      }, 500) // 500ms delay
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
+
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      if (value.trim().length >= 2) {
+        handleSearchProducts(value)
+      } else {
+        setSearchResults([])
+        setProductCategoryInfo({})
+      }
+    }, 500) // 500ms delay
   }
 
   const handleAddProduct = async (productId: string, quantity: number, availableStock: number) => {

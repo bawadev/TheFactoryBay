@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getPersonalizedRecommendationsAction, getRecentlyViewedProductsAction } from '@/app/actions/user-profile'
 import { getNewArrivals } from '@/lib/repositories/recommendation.repository'
 import { getAllPromotionalCategoriesAction, getProductsByCategoryAction } from '@/app/actions/promotional-categories'
+import type { PromotionalCategory } from '@/lib/types'
 import HomePageClient from './HomePageClient'
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -22,7 +23,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   // Fetch products for each promotional category
   const promotionalCategoriesWithProducts = await Promise.all(
-    promoCategories.map(async (category) => {
+    promoCategories.map(async (category: PromotionalCategory) => {
       const productsResult = await getProductsByCategoryAction(category.id, 8)
       return {
         category,

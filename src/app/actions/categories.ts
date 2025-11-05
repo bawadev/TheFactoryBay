@@ -9,7 +9,7 @@ import * as categoryRepo from '@/lib/repositories/category.repository'
  */
 async function isAdmin(): Promise<boolean> {
   const user = await getCurrentUser()
-  return user?.role === 'admin'
+  return user?.role === 'ADMIN'
 }
 
 /**

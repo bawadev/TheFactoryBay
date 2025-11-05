@@ -37,7 +37,7 @@ export default function FilterValidationPanel() {
         throw new Error(result.error || 'Validation failed')
       }
 
-      setValidationResult(result.data)
+      setValidationResult(result.data || null)
     } catch (error) {
       console.error('Validation error:', error)
       setValidationResult({

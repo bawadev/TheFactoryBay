@@ -3,6 +3,7 @@
 import { getSession } from '@/lib/db'
 import { isAdmin } from '@/lib/auth'
 import * as filterRepo from '@/lib/repositories/custom-filter.repository'
+import type { CustomFilter } from '@/lib/repositories/custom-filter.repository'
 
 /**
  * Create a new custom filter with multiple parents
@@ -237,7 +238,7 @@ export async function getFiltersBreadcrumbsAction(filterIds: string[]) {
   try {
     const breadcrumbs = await filterRepo.getFiltersBreadcrumbs(session, filterIds)
     // Convert Map to object for serialization
-    const breadcrumbsObj: Record<string, typeof filterRepo.CustomFilter[]> = {}
+    const breadcrumbsObj: Record<string, CustomFilter[]> = {}
     breadcrumbs.forEach((value, key) => {
       breadcrumbsObj[key] = value
     })

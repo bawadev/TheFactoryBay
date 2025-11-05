@@ -13,8 +13,7 @@ import {
   getAllBrands,
   type ProductWithVariants,
 } from '@/lib/repositories/product.repository'
-import type { ActionResponse } from './types'
-import type { Product, ProductVariant } from '@/lib/types'
+import type { ActionResponse, Product, ProductVariant } from '@/lib/types'
 
 /**
  * Get all products for admin view

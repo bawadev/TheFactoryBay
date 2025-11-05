@@ -33,7 +33,7 @@ async function getCurrentUserId(): Promise<string | null> {
 
   try {
     const payload = await verifyToken(token.value)
-    return payload.userId
+    return payload?.userId || null
   } catch {
     return null
   }

@@ -20,6 +20,9 @@ export default async function PaymentPage({ params }: { params: Promise<{ id: st
   let userId: string
   try {
     const payload = await verifyToken(token.value)
+    if (!payload) {
+      redirect(`/login?redirect=/order/${orderId}/payment`)
+    }
     userId = payload.userId
   } catch {
     redirect(`/login?redirect=/order/${orderId}/payment`)

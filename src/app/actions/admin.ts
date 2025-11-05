@@ -2,7 +2,7 @@
 
 import { isAdmin } from '@/lib/auth'
 import { updateUser, findUserByEmail } from '@/lib/repositories/user.repository'
-import type { ActionResponse } from './types'
+import type { ActionResponse } from '@/lib/types'
 
 /**
  * Make a user an admin (dev helper)

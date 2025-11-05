@@ -55,9 +55,11 @@ export default async function LocaleLayout({
   if (token) {
     try {
       const payload = await verifyToken(token.value)
-      isAuthenticated = true
-      userEmail = payload.email
-      isAdmin = payload.role === 'ADMIN'
+      if (payload) {
+        isAuthenticated = true
+        userEmail = payload.email
+        isAdmin = payload.role === 'ADMIN'
+      }
     } catch {
       // Token is invalid
       isAuthenticated = false

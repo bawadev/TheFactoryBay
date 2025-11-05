@@ -237,7 +237,11 @@ export async function listFiles(prefix: string = ''): Promise<Minio.BucketItem[]
     const files: Minio.BucketItem[] = []
     const stream = client.listObjects(bucketName, prefix, true)
 
-    stream.on('data', (obj) => files.push(obj))
+    stream.on('data', (obj) => {
+      if (obj.name) {
+        files.push(obj as Minio.BucketItem)
+      }
+    })
     stream.on('error', reject)
     stream.on('end', () => resolve(files))
   })
