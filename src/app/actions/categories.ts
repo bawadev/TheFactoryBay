@@ -258,7 +258,11 @@ export async function deleteCategoryAction(id: string) {
   const session = getSession()
   try {
     const result = await categoryRepo.deleteCategory(session, id)
-    return result
+    // Map 'message' to 'error' for consistency with other actions
+    if (!result.success && result.message) {
+      return { success: false, error: result.message }
+    }
+    return { success: result.success }
   } catch (error: any) {
     console.error('Error deleting category:', error)
     return { success: false, error: error.message }

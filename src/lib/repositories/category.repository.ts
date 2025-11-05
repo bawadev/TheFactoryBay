@@ -348,6 +348,22 @@ export async function deleteCategory(
   session: Session,
   id: string
 ): Promise<{ success: boolean; message?: string }> {
+  // Get category info
+  const categoryResult = await session.run(
+    `MATCH (c:Category {id: $id})
+     RETURN c.name as name`,
+    { id }
+  )
+
+  if (categoryResult.records.length === 0) {
+    return {
+      success: false,
+      message: 'Category not found'
+    }
+  }
+
+  const categoryName = categoryResult.records[0].get('name')
+
   // Check for children
   const childrenResult = await session.run(
     `MATCH (c:Category {id: $id})<-[:CHILD_OF]-(child:Category)
@@ -359,7 +375,7 @@ export async function deleteCategory(
   if (childCount > 0) {
     return {
       success: false,
-      message: `Cannot delete category with ${childCount} child categories`
+      message: `Cannot delete "${categoryName}" because it has ${childCount} child ${childCount === 1 ? 'category' : 'categories'}. Please delete the child categories first.`
     }
   }
 
@@ -374,7 +390,7 @@ export async function deleteCategory(
   if (productCount > 0) {
     return {
       success: false,
-      message: `Cannot delete category with ${productCount} products`
+      message: `Cannot delete "${categoryName}" because it has ${productCount} ${productCount === 1 ? 'product' : 'products'} assigned. Please remove or reassign the products first.`
     }
   }
 

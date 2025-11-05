@@ -20,7 +20,7 @@ export default function Notification({
   message,
   isOpen,
   onClose,
-  autoClose = true,
+  autoClose = false,
   autoCloseDelay = 3000,
 }: NotificationProps) {
   useEffect(() => {
@@ -37,34 +37,38 @@ export default function Notification({
   const styles = {
     success: {
       bg: 'bg-green-50',
-      border: 'border-green-200',
+      border: 'border-green-500',
       icon: 'text-green-600',
       title: 'text-green-900',
       message: 'text-green-700',
+      button: 'bg-green-600 hover:bg-green-700',
       iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
     },
     error: {
       bg: 'bg-red-50',
-      border: 'border-red-200',
+      border: 'border-red-500',
       icon: 'text-red-600',
       title: 'text-red-900',
       message: 'text-red-700',
+      button: 'bg-red-600 hover:bg-red-700',
       iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',
     },
     warning: {
       bg: 'bg-yellow-50',
-      border: 'border-yellow-200',
+      border: 'border-yellow-500',
       icon: 'text-yellow-600',
       title: 'text-yellow-900',
       message: 'text-yellow-700',
+      button: 'bg-yellow-600 hover:bg-yellow-700',
       iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
     },
     info: {
       bg: 'bg-blue-50',
-      border: 'border-blue-200',
+      border: 'border-blue-500',
       icon: 'text-blue-600',
       title: 'text-blue-900',
       message: 'text-blue-700',
+      button: 'bg-blue-600 hover:bg-blue-700',
       iconPath: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     },
   }
@@ -72,53 +76,57 @@ export default function Notification({
   const style = styles[type]
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in">
-      <div className={`${style.bg} ${style.border} border-2 rounded-lg shadow-lg p-4 max-w-md`}>
-        <div className="flex items-start gap-3">
-          {/* Icon */}
-          <div className="flex-shrink-0">
-            <svg
-              className={`w-6 h-6 ${style.icon}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Dialog */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={`${style.bg} ${style.border} border-2 rounded-xl shadow-2xl w-full max-w-md transform transition-all`}>
+          {/* Header with Icon */}
+          <div className="flex items-start gap-4 p-6 pb-4">
+            <div className={`flex-shrink-0 w-12 h-12 rounded-full ${style.bg} flex items-center justify-center`}>
+              <svg
+                className={`w-6 h-6 ${style.icon}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
                 strokeWidth={2}
-                d={style.iconPath}
-              />
-            </svg>
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d={style.iconPath}
+                />
+              </svg>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h3 className={`text-lg font-semibold ${style.title}`}>
+                {title}
+              </h3>
+              {message && (
+                <p className={`text-sm mt-2 ${style.message}`}>
+                  {message}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-semibold ${style.title}`}>
-              {title}
-            </p>
-            {message && (
-              <p className={`text-sm mt-1 ${style.message}`}>
-                {message}
-              </p>
-            )}
+          {/* Footer with OK Button */}
+          <div className="px-6 py-4 bg-white bg-opacity-50 rounded-b-xl">
+            <button
+              onClick={onClose}
+              className={`w-full ${style.button} text-white font-semibold py-2.5 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2`}
+            >
+              OK
+            </button>
           </div>
-
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className={`flex-shrink-0 ${style.icon} hover:opacity-70 transition-opacity`}
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }
