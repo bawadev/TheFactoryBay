@@ -264,7 +264,7 @@ export default function HomePageClient({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
               </span>
-              <span className="text-sm font-medium text-white/90">Making Premium Experience closer to you</span>
+              <span className="text-sm font-medium text-white/90">Premium Experience closer to You</span>
             </div>
 
             {/* Main Heading - Display Scale */}
