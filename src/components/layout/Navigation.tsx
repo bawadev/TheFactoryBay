@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
@@ -68,8 +69,14 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
             <Link href={`/${locale}`} className="flex items-center gap-3 group">
               <div className="relative">
                 <div className="absolute inset-0 bg-navy-600/20 rounded-full blur-md group-hover:blur-lg transition-all duration-300"></div>
-                <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-navy-600 to-navy-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-white font-bold text-base">FB</span>
+                <div className="relative h-14 w-14 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+                  <Image
+                    src="/favicon.svg"
+                    alt="Factory Bay Logo"
+                    width={48}
+                    height={48}
+                    className="object-contain"
+                  />
                 </div>
               </div>
               <div className="flex flex-col">
@@ -259,8 +266,14 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
           {/* Mobile Menu Header - Glass Style */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200/50 backdrop-blur-sm bg-gradient-to-r from-navy-50/30 to-transparent">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-navy-600 to-navy-700 flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-sm">FB</span>
+              <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-md overflow-hidden">
+                <Image
+                  src="/favicon.svg"
+                  alt="Factory Bay Logo"
+                  width={36}
+                  height={36}
+                  className="object-contain"
+                />
               </div>
               <span className="text-lg font-bold text-navy-900">Menu</span>
             </div>
