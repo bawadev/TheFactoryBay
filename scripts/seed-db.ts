@@ -62,6 +62,7 @@ async function seedUsers() {
       // Create user
       const user = await createUser({
         email: userData.email,
+        password: '', // Dummy value, passwordHash is used instead
         passwordHash,
         firstName: userData.firstName,
         lastName: userData.lastName,

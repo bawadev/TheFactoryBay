@@ -175,6 +175,7 @@ export async function getVariantWithProduct(variantId: string): Promise<{
     stockPrice: number
     retailPrice: number
     sku: string
+    images: string[]
   }
 } | null> {
   const session = getSession()
@@ -183,7 +184,7 @@ export async function getVariantWithProduct(variantId: string): Promise<{
       `
       MATCH (v:ProductVariant {id: $variantId})-[:VARIANT_OF]->(p:Product)
       RETURN v {.*} as variant,
-             p {.id, .name, .brand, .category, .gender, .stockPrice, .retailPrice, .sku} as product
+             p {.id, .name, .brand, .category, .gender, .stockPrice, .retailPrice, .sku, .images} as product
       `,
       { variantId }
     )

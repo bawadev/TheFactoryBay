@@ -638,7 +638,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    Products in "{selectedCategory.name}"
+                    Products in &ldquo;{selectedCategory.name}&rdquo;
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Manage products assigned to this category

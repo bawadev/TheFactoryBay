@@ -13,6 +13,7 @@ export interface CartItemWithDetails extends CartItem {
     stockPrice: number
     retailPrice: number
     sku: string
+    images: string[]
   }
   variant: {
     id: string
@@ -141,7 +142,7 @@ export async function getCartItems(userId: string): Promise<CartItemWithDetails[
       `
       MATCH (u:User {id: $userId})-[:HAS_CART_ITEM]->(c:CartItem)-[:CART_ITEM_FOR]->(v:ProductVariant)-[:VARIANT_OF]->(p:Product)
       RETURN c {.*} as cartItem,
-             p {.id, .name, .brand, .category, .gender, .stockPrice, .retailPrice, .sku} as product,
+             p {.id, .name, .brand, .category, .gender, .stockPrice, .retailPrice, .sku, .images} as product,
              v {.*} as variant
       ORDER BY c.addedAt DESC
       `,

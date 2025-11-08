@@ -47,6 +47,7 @@ type FormData = {
   stockPrice: string
   retailPrice: string
   sku: string
+  images: string[]
 }
 
 type VariantFormData = {

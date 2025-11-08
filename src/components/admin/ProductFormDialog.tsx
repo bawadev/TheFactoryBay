@@ -16,7 +16,7 @@ interface ProductFormDialogProps {
   editingProduct: ProductWithVariants | null
   isEditing: boolean
   allBrands: string[]
-  onLoadProduct: (productId: string) => void
+  onLoadProduct: (product: ProductWithVariants) => void | Promise<void>
   onOpenCategoryPicker: () => void
   selectedCategoryIds: string[]
 }
