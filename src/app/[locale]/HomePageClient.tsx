@@ -67,13 +67,13 @@ function ProductCard({ product }: { product: ProductWithVariants }) {
           </div>
         )}
       </div>
-      <div className="p-4">
+      <div className="p-2 sm:p-3 md:p-4">
         <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">{product.brand}</p>
-        <h3 className="font-semibold text-gray-900 line-clamp-1 mt-1">{product.name}</h3>
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-navy-600">Rs {product.stockPrice.toFixed(2)}</span>
+        <h3 className="font-semibold text-gray-900 md:line-clamp-2 mt-1 text-xs sm:text-sm md:text-base break-words">{product.name}</h3>
+        <div className="mt-3 flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-1 min-w-0">
+          <span className="text-sm sm:text-base md:text-lg font-bold text-navy-600 truncate">Rs {product.stockPrice.toFixed(0)}</span>
           {product.retailPrice > product.stockPrice && (
-            <span className="text-sm text-gray-400 line-through">Rs {product.retailPrice.toFixed(2)}</span>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through truncate">Rs {product.retailPrice.toFixed(0)}</span>
           )}
         </div>
         {totalStock > 0 && totalStock <= 5 && (
@@ -255,11 +255,11 @@ export default function HomePageClient({
           ))}
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-20 md:py-28 lg:px-8 lg:py-36">
           {/* Hero Content */}
-          <div className="text-center mb-12 sm:mb-16 animate-scale-up">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-scale-up">
             {/* Premium Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6 sm:mb-8 border border-white/20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4 sm:mb-6 md:mb-8 border border-white/20">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
@@ -268,14 +268,14 @@ export default function HomePageClient({
             </div>
 
             {/* Main Heading - Display Scale */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-[1.25] tracking-tight px-4 pb-6 pt-2">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-3 sm:mb-4 md:mb-6 leading-[1.2] tracking-tight px-2 sm:px-4 pb-2 sm:pb-4 md:pb-6 pt-1 sm:pt-2">
               <span className="block bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent drop-shadow-2xl" style={{WebkitBoxDecorationBreak: 'clone', boxDecorationBreak: 'clone'}}>
                 {t('hero.title')}
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-200 mb-12 sm:mb-16 drop-shadow-md max-w-3xl mx-auto leading-relaxed font-light">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 mb-6 sm:mb-8 md:mb-12 lg:mb-16 drop-shadow-md max-w-3xl mx-auto leading-relaxed font-light">
               {t('hero.subtitle')}
             </p>
 
@@ -295,7 +295,7 @@ export default function HomePageClient({
           </div>
 
           {/* Popular Categories Quick Links */}
-          <div className="mt-12 sm:mt-16 text-center">
+          <div className="mt-6 sm:mt-10 md:mt-12 lg:mt-16 text-center">
             <p className="text-sm text-gray-300 mb-4">Popular categories:</p>
             <div className="flex flex-wrap justify-center gap-3">
               {rootCategories.map((category) => (

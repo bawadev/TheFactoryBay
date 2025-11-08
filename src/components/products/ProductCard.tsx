@@ -65,14 +65,14 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-2 sm:p-3 md:p-4">
           {/* Brand */}
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
             {product.brand}
           </p>
 
           {/* Product Name */}
-          <h3 className="mt-1 font-semibold text-gray-900 line-clamp-2 group-hover:text-navy-600 transition-colors">
+          <h3 className="mt-1 font-semibold text-gray-900 md:line-clamp-2 lg:line-clamp-2 text-xs sm:text-sm md:text-base group-hover:text-navy-600 transition-colors break-words">
             {product.name}
           </h3>
 
@@ -82,13 +82,13 @@ export default function ProductCard({ product }: ProductCardProps) {
           </p>
 
           {/* Prices */}
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-bold text-navy-600">
-                Rs {product.stockPrice.toFixed(2)}
+          <div className="mt-2 sm:mt-3 flex items-baseline justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-1 min-w-0">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-navy-600 truncate">
+                Rs {product.stockPrice.toFixed(0)}
               </span>
-              <span className="text-sm text-gray-400 line-through">
-                Rs {product.retailPrice.toFixed(2)}
+              <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through truncate">
+                Rs {product.retailPrice.toFixed(0)}
               </span>
             </div>
           </div>
