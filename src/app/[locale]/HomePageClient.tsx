@@ -264,7 +264,7 @@ export default function HomePageClient({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
               </span>
-              <span className="text-sm font-medium text-white/90">Premium Brands at Factory Prices</span>
+              <span className="text-sm font-medium text-white/90">Making Premium Experience closer to you</span>
             </div>
 
             {/* Main Heading - Display Scale */}
@@ -294,24 +294,6 @@ export default function HomePageClient({
             </div>
           </div>
 
-          {/* Popular Categories Quick Links */}
-          <div className="mt-6 sm:mt-10 md:mt-12 lg:mt-16 text-center">
-            <p className="text-sm text-gray-300 mb-4">Popular categories:</p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {rootCategories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/${locale}/shop?category=${category.hierarchy}`}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium text-white transition-all duration-200 border border-white/10 hover:border-white/30 hover:scale-105"
-                >
-                  {category.name}
-                  {category.productCount !== undefined && category.productCount > 0 && (
-                    <span className="ml-2 text-xs opacity-75">({category.productCount})</span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Bottom Wave Separator */}
