@@ -38,86 +38,90 @@ Factory Bay disrupts traditional retail by offering customers direct access to b
 
 ### Prerequisites
 - Node.js 18+
-- Docker (for Neo4j and MinIO)
+- Docker Desktop (for Neo4j and MinIO)
 - npm or yarn
 
-### Easy Setup (Recommended)
+### One-Command Setup (Recommended) ⚡
 
-Use the automated development script to manage all services:
+Use the automated setup script to manage everything:
 
-1. **Clone and install dependencies:**
-   ```bash
-   cd /home/bawa/work/TheFactoryBay
-   npm install
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your Neo4j credentials
-   ```
-
-3. **Start all services:**
-   ```bash
-   ./dev.sh start
-   ```
-
-4. **Open http://localhost:3000** 🎉
-
-**Other useful commands:**
 ```bash
-./dev.sh status   # Check all services
-./dev.sh stop     # Stop all services
-./dev.sh restart  # Restart all services
-./dev.sh logs nextjs  # View logs
-./dev.sh help     # Show all commands
+# 1. Clone and install
+git clone <your-repo>
+cd TheFactoryBay
+npm install
+
+# 2. Copy environment variables
+cp .env.example .env.local
+
+# 3. Start everything!
+./setup.sh start
 ```
 
-See **[DEV_SCRIPT_GUIDE.md](./DEV_SCRIPT_GUIDE.md)** for complete documentation.
+That's it! The script will:
+- ✅ Start Neo4j & MinIO containers
+- ✅ Detect empty database and offer to initialize
+- ✅ Create test users automatically
+- ✅ Start Next.js dev server
+- ✅ Show all service URLs and credentials
+
+**Open http://localhost:3000** 🎉
+
+### Setup Script Commands
+
+```bash
+./setup.sh start      # Start all services
+./setup.sh stop       # Stop all services
+./setup.sh restart    # Restart all services
+./setup.sh status     # Check service status
+./setup.sh logs <service>  # View logs (nextjs|neo4j|minio)
+./setup.sh help       # Show help
+```
+
+### Test Accounts (Auto-Created)
+
+| Account | Email | Password |
+|---------|-------|----------|
+| Admin | `testadmin@factorybay.com` | `Admin123!` |
+| Customer | `test@example.com` | `Customer123!` |
+
+**Service URLs:**
+- Factory Bay: http://localhost:3000
+- Neo4j Browser: http://localhost:7474 (`neo4j` / `factorybay123`)
+- MinIO Console: http://localhost:9001 (`factorybay` / `factorybay123`)
 
 ### Manual Setup (Alternative)
 
-If you prefer to start services manually:
+If you prefer manual control:
 
-1. **Clone and install dependencies:**
-   ```bash
-   cd /home/bawa/work/TheFactoryBay
-   npm install
-   ```
+```bash
+# 1. Start infrastructure
+docker compose up -d
 
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your Neo4j credentials
-   ```
+# 2. Initialize database schema
+npm run db:init
 
-3. **Start Docker containers:**
-   ```bash
-   docker compose up -d
-   ```
+# 3. Seed test users
+npm run db:seed
 
-4. **Initialize database:**
-   ```bash
-   npm run db:init
-   ```
+# 4. Start Next.js
+npm run dev
+```
 
-5. **Start development server:**
-   ```bash
-   npm run dev
-   ```
-
-6. **Open http://localhost:3000** 🎉
+**Note:** Using `./setup.sh` is recommended as it handles everything automatically!
 
 ---
 
 ## 📚 Documentation
 
-- **[DEV_SCRIPT_GUIDE.md](./DEV_SCRIPT_GUIDE.md)** - Development environment script guide
-- **[SPECIFICATION.md](./SPECIFICATION.md)** - Complete technical specification
-- **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** - Design system and component specs
-- **[SETUP.md](./SETUP.md)** - Detailed setup instructions
-- **[PROGRESS.md](./PROGRESS.md)** - Development progress tracker
-- **[IMAGE_RESOURCES.md](./IMAGE_RESOURCES.md)** - Image sourcing and management
+- **[CLAUDE.md](./CLAUDE.md)** - Developer guide for AI assistants (architecture, commands, patterns)
+- **[USER_LOGIN_GUIDE.md](./USER_LOGIN_GUIDE.md)** - Complete login guide with all credentials
+- **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** - Design system and component specifications
+- **Database Management:**
+  - Run `./setup.sh start` for automated setup
+  - Run `npm run db:init` to initialize schema
+  - Run `npm run db:seed` to create test users
+  - Run `npm run db:clear` to reset database
 
 ---
 
@@ -271,14 +275,27 @@ See [PROGRESS.md](./PROGRESS.md) for detailed status.
 ## 📦 NPM Scripts
 
 ```bash
-npm run dev          # Start development server
+# Development
+npm run dev          # Start Next.js dev server
 npm run build        # Create production build
 npm run start        # Start production server
 npm run lint         # Run ESLint
-npm run db:init      # Initialize database schema
-npm run db:seed      # Seed with sample data
-npm run db:clear     # Clear all database data
+
+# Database Management
+npm run db:init      # Initialize Neo4j schema (constraints & indexes)
+npm run db:seed      # Seed test users (admin & customer)
+npm run db:clear     # Clear all database data (with confirmation)
+
+# Categories & Filters
+npm run setup:categories  # Setup category hierarchy
+npm run filters:init      # Initialize custom filter system
+npm run filters:validate  # Validate filter relationships
+
+# MinIO Setup
+npm run minio:init   # Initialize MinIO bucket
 ```
+
+**Tip:** Use `./setup.sh start` instead of manual npm commands!
 
 ---
 

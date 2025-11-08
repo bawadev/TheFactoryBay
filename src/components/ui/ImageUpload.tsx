@@ -2,12 +2,12 @@
 
 /**
  * Image Upload Component
- * Reusable component for uploading images with preview
+ * Reusable component for uploading images with preview or adding via URL
  */
 
 import { useState, useRef, useId } from 'react'
 import { uploadImage, uploadMultipleImages } from '@/app/actions/upload'
-import { X, Upload, Image as ImageIcon } from 'lucide-react'
+import { X, Upload, Image as ImageIcon, Link as LinkIcon } from 'lucide-react'
 
 interface ImageUploadProps {
   multiple?: boolean
@@ -16,6 +16,8 @@ interface ImageUploadProps {
   initialImages?: string[]
   label?: string
 }
+
+type UploadMode = 'file' | 'url'
 
 export default function ImageUpload({
   multiple = false,
@@ -29,6 +31,8 @@ export default function ImageUpload({
   const [error, setError] = useState<string | null>(null)
   const [previewFiles, setPreviewFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [uploadMode, setUploadMode] = useState<UploadMode>('file')
+  const [urlInput, setUrlInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uniqueId = useId()
 
@@ -180,9 +184,96 @@ export default function ImageUpload({
     setPreviewFiles(newPreviews)
   }
 
+  const validateUrl = (url: string): boolean => {
+    try {
+      new URL(url)
+      // Basic check for image file extension or common image hosting domains
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg', '.avif']
+      const lowerUrl = url.toLowerCase()
+      return imageExtensions.some(ext => lowerUrl.includes(ext)) ||
+             lowerUrl.includes('imgur') ||
+             lowerUrl.includes('cloudinary') ||
+             lowerUrl.includes('unsplash') ||
+             lowerUrl.includes('images') ||
+             lowerUrl.includes('media')
+    } catch {
+      return false
+    }
+  }
+
+  const handleAddUrl = () => {
+    const trimmedUrl = urlInput.trim()
+
+    if (!trimmedUrl) {
+      setError('Please enter an image URL')
+      return
+    }
+
+    if (!validateUrl(trimmedUrl)) {
+      setError('Please enter a valid image URL')
+      return
+    }
+
+    // Check max files limit
+    if (multiple && images.length >= maxFiles) {
+      setError(`Maximum ${maxFiles} images allowed`)
+      return
+    }
+
+    if (!multiple && images.length > 0) {
+      setError('Only one image allowed')
+      return
+    }
+
+    // Add URL to images
+    const newImages = multiple ? [...images, trimmedUrl] : [trimmedUrl]
+    setImages(newImages)
+    onUploadComplete(newImages)
+    setUrlInput('')
+    setError(null)
+  }
+
   return (
     <div className="space-y-4">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+
+        {/* Mode Toggle */}
+        {previewFiles.length === 0 && (
+          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setUploadMode('file')
+                setError(null)
+              }}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                uploadMode === 'file'
+                  ? 'bg-white text-navy-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Upload className="w-3 h-3 inline mr-1" />
+              Upload
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setUploadMode('url')
+                setError(null)
+              }}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                uploadMode === 'url'
+                  ? 'bg-white text-navy-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <LinkIcon className="w-3 h-3 inline mr-1" />
+              URL
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Uploaded Images */}
       {images.length > 0 && (
@@ -242,8 +333,39 @@ export default function ImageUpload({
         </div>
       )}
 
-      {/* Upload Button */}
-      {(!multiple || images.length < maxFiles) && previewFiles.length === 0 && (
+      {/* URL Input Mode */}
+      {uploadMode === 'url' && (!multiple || images.length < maxFiles) && previewFiles.length === 0 && (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddUrl()
+                }
+              }}
+              placeholder="https://example.com/image.jpg"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-navy-600 focus:border-transparent text-sm"
+            />
+            <button
+              type="button"
+              onClick={handleAddUrl}
+              className="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700 transition-colors text-sm font-medium"
+            >
+              Add URL
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Enter a direct image URL (e.g., from Imgur, Cloudinary, or any publicly accessible image)
+          </p>
+        </div>
+      )}
+
+      {/* File Upload Mode */}
+      {uploadMode === 'file' && (!multiple || images.length < maxFiles) && previewFiles.length === 0 && (
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
             isDragging
@@ -293,11 +415,20 @@ export default function ImageUpload({
       )}
 
       {/* Info */}
-      <p className="text-xs text-gray-500">
-        {multiple
-          ? `You can upload up to ${maxFiles} images. All formats are automatically converted to WebP for optimal performance. Images will be stored securely and served via MinIO.`
-          : 'Upload a single product image. All formats are automatically converted to WebP for optimal performance. Image will be stored securely and served via MinIO.'}
-      </p>
+      {uploadMode === 'file' && (
+        <p className="text-xs text-gray-500">
+          {multiple
+            ? `You can upload up to ${maxFiles} images. All formats are automatically converted to WebP for optimal performance. Images will be stored securely and served via MinIO.`
+            : 'Upload a single product image. All formats are automatically converted to WebP for optimal performance. Image will be stored securely and served via MinIO.'}
+        </p>
+      )}
+      {uploadMode === 'url' && (
+        <p className="text-xs text-gray-500">
+          {multiple
+            ? `You can add up to ${maxFiles} images via URL. Use direct image links from reliable image hosts. Images added via URL are not stored in MinIO.`
+            : 'Add a single product image via URL. Use a direct image link from a reliable image host. Images added via URL are not stored in MinIO.'}
+        </p>
+      )}
     </div>
   )
 }

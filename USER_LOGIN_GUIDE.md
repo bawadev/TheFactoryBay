@@ -1,9 +1,10 @@
 # Factory Bay - User Login Guide
 
-This guide explains how to access Factory Bay as a regular customer user, including test credentials and how to create new accounts.
+This guide explains how to access Factory Bay including all services, test credentials, and account creation.
 
 ## Table of Contents
 - [Quick Start](#quick-start)
+- [Database & Infrastructure Access](#database--infrastructure-access)
 - [Test User Accounts](#test-user-accounts)
 - [Creating a New Account](#creating-a-new-account)
 - [Login Process](#login-process)
@@ -12,17 +13,78 @@ This guide explains how to access Factory Bay as a regular customer user, includ
 
 ## Quick Start
 
-1. **Ensure the application is running:**
+1. **Start all services:**
    ```bash
-   npm run dev
+   # Recommended: Use dev.sh to start everything
+   ./setup.sh start
+
+   # Or manually:
+   docker compose up -d   # Start Neo4j & MinIO
+   npm run dev            # Start Next.js
    ```
-   Access at: http://localhost:3000
 
-2. **Navigate to login page:**
-   - Direct URL: http://localhost:3000/en/login
-   - Or click "Login" in the navigation bar
+2. **Verify services are running:**
+   - Factory Bay: http://localhost:3000
+   - Neo4j Browser: http://localhost:7474
+   - MinIO Console: http://localhost:9001
 
-3. **Use test credentials** (see below) or **create a new account**
+3. **Login with test credentials:**
+   - **Admin:** `testadmin@factorybay.com` / `Admin123!`
+   - **Neo4j:** `neo4j` / `factorybay123`
+   - **MinIO:** `factorybay` / `factorybay123`
+
+4. **Or create a new customer account:**
+   - Navigate to: http://localhost:3000/en/signup
+   - Fill in the registration form
+   - Auto-login after signup
+
+---
+
+## Database & Infrastructure Access
+
+### Neo4j Browser
+
+Access the Neo4j graph database browser for direct database queries and visualization.
+
+| Service | URL | Username | Password | Status |
+|---------|-----|----------|----------|--------|
+| **Neo4j Browser** | http://localhost:7474 | `neo4j` | `factorybay123` | ✅ Verified |
+
+**Connection Details:**
+- Connect URL: `neo4j://localhost:7687`
+- Authentication: Username / Password
+- Database: `neo4j` (default)
+
+**Common Queries:**
+```cypher
+// View all users
+MATCH (u:User) RETURN u.email, u.role
+
+// View all products
+MATCH (p:Product) RETURN p.name, p.brand, p.price LIMIT 10
+
+// View category hierarchy
+MATCH (c:Category) WHERE c.level = 0 RETURN c.name, c.hierarchy
+```
+
+### MinIO Console
+
+Access the MinIO object storage console for managing uploaded images and files.
+
+| Service | URL | Access Key | Secret Key | Status |
+|---------|-----|------------|------------|--------|
+| **MinIO Console** | http://localhost:9001 | `factorybay` | `factorybay123` | ✅ Verified |
+
+**Features:**
+- Object Browser: View and manage uploaded product images
+- Bucket Management: `product-images` bucket contains all product photos
+- File Upload: Upload new images directly
+- Access Management: Configure bucket policies
+
+**Product Images Location:**
+- Bucket: `product-images`
+- URL Format: `http://localhost:9000/product-images/{filename}.webp`
+- All images auto-converted to WebP format
 
 ---
 
@@ -32,43 +94,46 @@ This guide explains how to access Factory Bay as a regular customer user, includ
 
 For testing admin functionality:
 
-| Email | Password | Role | Access |
+| Email | Password | Role | Status |
 |-------|----------|------|--------|
-| `testadmin@factorybay.com` | `Admin123!` | ADMIN | Full admin panel access |
+| `testadmin@factorybay.com` | `Admin123!` | ADMIN | ✅ Verified Working |
 
-**Admin Panel URL:** http://localhost:3000/en/admin
+**Admin Panel URL:** http://localhost:3000/en/admin/dashboard
 
 **Admin Features:**
-- Product Management
-- Order Management
-- Inventory Control
-- Category Management (Ladies/Gents/Kids hierarchies)
-- Promotional Categories
-- User Management
+- **Products:** Manage product catalog, add new products, update inventory
+- **Orders:** View and manage customer orders, update order status, track fulfillment
+- **Inventory:** Track stock levels, view low inventory alerts, manage variants
+- **Promotional Sections:** Create "Best Sellers", "New Arrivals", seasonal offers
+- **Custom Filters:** Define hierarchical filters to organize products
+- **Categories:** Manage Ladies/Gents/Kids category hierarchies
 
-### Existing Customer Accounts in Database
+**Quick Stats Dashboard:**
+- Total Products count
+- Pending Orders count
+- Low Stock Items alerts
+- Total Revenue tracking
 
-The following customer accounts currently exist in your database:
+### Customer Test Account
 
-| Email | Name | Role | Notes |
-|-------|------|------|-------|
-| `testuser@example.com` | Test User | CUSTOMER | Created via signup |
-| `newtest2@example.com` | NewTest User2 | CUSTOMER | Created via signup |
-| `inbox.bawantha@gmail.com` | Pasindu Munasinghe | CUSTOMER | Created via signup |
+**Recommended:** Create a new customer account for testing (see [Creating a New Account](#creating-a-new-account) below).
 
-**Note:** Since these accounts were created through the signup flow, their passwords are hashed and unknown. You'll need to either:
-1. **Create a new customer account** (recommended - see below)
-2. **Reset the password** for an existing account (feature may need implementation)
+**Example Test Customer:**
+```
+Email:     test.customer@example.com
+Password:  TestPass123!
+```
 
-### Documented Test Account (SETUP.md)
+### Other Accounts in Database
 
-According to the project documentation, there should be a test customer account:
-- **Email:** `customer@factorybay.com`
-- **Password:** `Customer123!`
+The following accounts exist but passwords are unknown (created via signup with hashed passwords):
 
-**Status:** This account doesn't currently exist in your database. You can either:
-- Create it manually through the signup page using these credentials
-- Wait for it to be seeded (seed script may need updating)
+| Email | Role | Status |
+|-------|------|--------|
+| `admin@factorybay.com` | ADMIN | ⚠️ Password unknown |
+| `test@example.com` | CUSTOMER | ⚠️ Password unknown |
+
+**Note:** If you need to access these accounts, create new test accounts instead or manually reset passwords via Neo4j.
 
 ---
 
@@ -219,10 +284,14 @@ Once logged in as a customer, you have access to:
 - Login again to restore session
 
 ### Can't Access Admin Panel
-- Customer accounts have `CUSTOMER` role
+- Customer accounts have `CUSTOMER` role by default
 - Admin panel requires `ADMIN` role
-- Contact admin to upgrade your account role if needed
-- Command to upgrade: `npx tsx scripts/set-admin-role.ts your-email@example.com`
+- To upgrade an account to admin, use Neo4j:
+  ```bash
+  docker exec factory-bay-neo4j cypher-shell -u neo4j -p factorybay123 \
+    "MATCH (u:User {email: 'your-email@example.com'}) SET u.role = 'ADMIN' RETURN u.email, u.role"
+  ```
+- Or create a script at `scripts/set-admin-role.ts` if needed
 
 ### Account Creation Fails
 - **Email already exists** - use different email or login with existing account
@@ -261,6 +330,14 @@ cat .env.local
 
 ## Quick Reference
 
+### All Service Credentials
+
+| Service | URL | Username/Email | Password | Status |
+|---------|-----|----------------|----------|--------|
+| **Factory Bay (Admin)** | http://localhost:3000/en/login | `testadmin@factorybay.com` | `Admin123!` | ✅ Working |
+| **Neo4j Browser** | http://localhost:7474 | `neo4j` | `factorybay123` | ✅ Working |
+| **MinIO Console** | http://localhost:9001 | `factorybay` | `factorybay123` | ✅ Working |
+
 ### Customer URLs
 ```
 Homepage:        http://localhost:3000/en
@@ -275,11 +352,21 @@ Profile:         http://localhost:3000/en/profile
 
 ### Admin URLs
 ```
-Admin Panel:     http://localhost:3000/en/admin
+Dashboard:       http://localhost:3000/en/admin/dashboard
 Products:        http://localhost:3000/en/admin/products
 Orders:          http://localhost:3000/en/admin/orders
+Inventory:       http://localhost:3000/en/admin/inventory
 Categories:      http://localhost:3000/en/admin/categories
+Filters:         http://localhost:3000/en/admin/filters
 Promo Sections:  http://localhost:3000/en/admin/sections
+```
+
+### Infrastructure URLs
+```
+Neo4j Browser:   http://localhost:7474
+Neo4j Bolt:      neo4j://localhost:7687
+MinIO Console:   http://localhost:9001
+MinIO API:       http://localhost:9000
 ```
 
 ### Recommended Test Workflow

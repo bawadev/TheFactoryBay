@@ -11,10 +11,10 @@ Factory Bay is a modern e-commerce platform for branded clothing at wholesale pr
 ### Development
 ```bash
 # Recommended: Use dev.sh to manage all services together
-./dev.sh start         # Start Neo4j, MinIO, and Next.js
-./dev.sh stop          # Stop all services
-./dev.sh status        # Check status
-./dev.sh logs <service> # View logs (nextjs, neo4j, minio)
+./setup.sh start         # Start Neo4j, MinIO, and Next.js
+./setup.sh stop          # Stop all services
+./setup.sh status        # Check status
+./setup.sh logs <service> # View logs (nextjs, neo4j, minio)
 
 # Alternative: Manual start
 docker compose up -d   # Start Neo4j & MinIO only
@@ -31,15 +31,20 @@ npm run lint               # Run ESLint
 ### Database Management
 ```bash
 npm run db:init            # Initialize Neo4j schema (constraints & indexes)
-npm run db:seed            # Seed database with sample data
-npm run db:clear           # Clear all database data
+npm run db:seed            # Seed database with test users (IMPORTANT: Run this after db:init or db:clear)
+npm run db:clear           # Clear all database data (prompts for confirmation)
 
 # Category & Filter System
+npm run setup:categories   # Setup category hierarchy (Ladies/Gents/Kids)
 npm run setup:filters      # Setup graph hierarchy for categories
 npm run filters:init       # Initialize custom filter system
 npm run filters:validate   # Validate filter relationships
 npm run filters:recalculate # Recalculate filter levels
 ```
+
+**Default Test Users (created by `db:seed`):**
+- Admin: `testadmin@factorybay.com` / `Admin123!`
+- Customer: `test@example.com` / `Customer123!`
 
 ### MinIO Setup
 ```bash
@@ -236,6 +241,26 @@ All uploaded images are automatically converted to WebP format (except SVGs) for
 
 ## Development Workflow
 
+### Fresh Database Setup
+
+When starting from scratch or after clearing the database:
+
+```bash
+# 1. Initialize schema (constraints & indexes)
+npm run db:init
+
+# 2. Seed default test users
+npm run db:seed
+
+# 3. Setup category hierarchy (optional but recommended)
+npm run setup:categories
+
+# 4. Initialize MinIO bucket (if not already done)
+npm run minio:init
+```
+
+**Important:** Always run `npm run db:seed` after `db:init` or `db:clear` to create the default admin and customer test accounts. Without this, you won't be able to login to the admin panel.
+
 ### Making Database Changes
 1. Update schema in `src/lib/schema.ts`
 2. Run `npm run db:init` to apply constraints/indexes
@@ -300,11 +325,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## Common Pitfalls
 
-1. **Forgetting to start Docker services** - Use `./dev.sh start` instead of just `npm run dev`
-2. **Using deprecated `Product.category` field** - Use custom filters (`TAGGED_WITH`) instead
-3. **Assigning products to non-leaf categories** - Products should only be in leaf categories
-4. **Not handling Neo4j integer conversion** - Always convert to JS numbers
-5. **Mixing guest and user cart logic** - These are separate systems
+1. **Forgetting to start Docker services** - Use `./setup.sh start` instead of just `npm run dev`
+2. **Forgetting to seed database after init/clear** - Run `npm run db:seed` to create default test users, otherwise you can't login
+3. **Using deprecated `Product.category` field** - Use custom filters (`TAGGED_WITH`) instead
+4. **Assigning products to non-leaf categories** - Products should only be in leaf categories
+5. **Not handling Neo4j integer conversion** - Always convert to JS numbers
+6. **Mixing guest and user cart logic** - These are separate systems
 
 ## Git Workflow
 

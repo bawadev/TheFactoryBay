@@ -91,6 +91,7 @@ export default function LoginPage() {
               }
               required
               autoComplete="current-password"
+              showPasswordToggle
             />
 
             <Button type="submit" className="w-full" isLoading={isLoading}>

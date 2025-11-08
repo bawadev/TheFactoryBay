@@ -37,6 +37,52 @@ check_docker() {
     fi
 }
 
+# Function to check and initialize database if needed
+check_database() {
+    print_info "Checking database status..."
+
+    # Check if any users exist in the database
+    USER_COUNT=$(docker exec factory-bay-neo4j cypher-shell -u neo4j -p factorybay123 \
+        "MATCH (u:User) RETURN count(u) as count" 2>/dev/null | tail -1 | tr -d ' \r\n' || echo "0")
+
+    # Default to 0 if empty
+    USER_COUNT=${USER_COUNT:-0}
+
+    if [ "$USER_COUNT" -eq "0" ] 2>/dev/null; then
+        print_warning "Database is empty (no users found)"
+        echo ""
+        echo "Would you like to initialize the database with:"
+        echo "  - Schema (constraints & indexes)"
+        echo "  - Test users (admin & customer accounts)"
+        echo ""
+        read -p "Initialize database? (y/n) [y]: " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+            print_info "Initializing database schema..."
+            npm run db:init || {
+                print_error "Failed to initialize database schema"
+                return 1
+            }
+
+            print_info "Seeding test users..."
+            npm run db:seed || {
+                print_error "Failed to seed database"
+                return 1
+            }
+
+            print_success "Database initialized successfully!"
+        else
+            print_warning "Skipping database initialization"
+            print_warning "You won't be able to login without test users"
+            echo "  Run manually: npm run db:init && npm run db:seed"
+        fi
+    else
+        print_success "Database has $USER_COUNT user(s)"
+    fi
+    echo ""
+}
+
 # Function to start all services
 start_services() {
     print_info "Starting Factory Bay development environment..."
@@ -80,6 +126,13 @@ start_services() {
         print_warning "MinIO container not running"
     fi
 
+    # Wait a bit more for Neo4j to fully initialize (not just port open)
+    print_info "Waiting for Neo4j to fully initialize..."
+    sleep 3
+
+    # Check and initialize database if needed
+    check_database
+
     # Start Next.js dev server in background
     print_info "Starting Next.js development server..."
     npm run dev > .dev-server.log 2>&1 &
@@ -105,9 +158,13 @@ start_services() {
     print_success "All services started successfully!"
     echo ""
     print_info "Services:"
-    echo "  - Next.js:      http://localhost:3000"
+    echo "  - Next.js:       http://localhost:3000"
     echo "  - Neo4j Browser: http://localhost:7474 (neo4j/factorybay123)"
     echo "  - MinIO Console: http://localhost:9001 (factorybay/factorybay123)"
+    echo ""
+    print_info "Test Accounts:"
+    echo "  - Admin:    testadmin@factorybay.com / Admin123!"
+    echo "  - Customer: test@example.com / Customer123!"
     echo ""
     print_info "Logs:"
     echo "  - Next.js: tail -f .dev-server.log"

@@ -130,6 +130,7 @@ export default function SignupPage() {
               }
               required
               autoComplete="new-password"
+              showPasswordToggle
               hint="Min 8 characters, 1 uppercase, 1 number"
             />
 
