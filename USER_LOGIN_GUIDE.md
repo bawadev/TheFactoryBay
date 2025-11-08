@@ -397,12 +397,11 @@ MinIO API:       http://localhost:9000
 ## Support
 
 For issues or questions:
-- Check SETUP.md for environment setup
-- Check SPECIFICATION.md for feature details
-- Check STYLE_GUIDE.md for UI components
+- Check [INFRASTRUCTURE.md](./INFRASTRUCTURE.md) for environment setup and troubleshooting
+- Check [CLAUDE.md](./CLAUDE.md) for technical architecture details
 - Review server actions in `src/app/actions/auth.ts`
 
 ## Related Documentation
-- [SETUP.md](./SETUP.md) - Initial setup and installation
-- [README.md](./README.md) - Project overview
-- [SPECIFICATION.md](./SPECIFICATION.md) - Complete technical specification
+- [INFRASTRUCTURE.md](./INFRASTRUCTURE.md) - Infrastructure and data persistence guide
+- [README.md](./README.md) - Project overview and quick start
+- [CLAUDE.md](./CLAUDE.md) - Developer guide for AI assistants

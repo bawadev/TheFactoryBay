@@ -88,7 +88,7 @@ export default function OrdersPageClient({ orders, count }: OrdersPageClientProp
                       <div>
                         <p className="text-xs text-gray-600">{t('total')}</p>
                         <p className="text-sm font-semibold text-gray-900">
-                          ${order.totalAmount.toFixed(2)}
+                          Rs {order.totalAmount.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -156,7 +156,7 @@ export default function OrdersPageClient({ orders, count }: OrdersPageClientProp
 
                         <div className="text-right">
                           <p className="text-sm font-bold text-gray-900">
-                            ${(item.priceAtPurchase * item.quantity).toFixed(2)}
+                            Rs {(item.priceAtPurchase * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>

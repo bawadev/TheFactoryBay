@@ -123,10 +123,10 @@ export default function OrderConfirmationClient({ order }: OrderConfirmationClie
 
                     <div className="text-right">
                       <p className="text-sm font-bold text-navy-600">
-                        ${(item.priceAtPurchase * item.quantity).toFixed(2)}
+                        Rs {(item.priceAtPurchase * item.quantity).toFixed(2)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        ${item.priceAtPurchase.toFixed(2)} {t('each')}
+                        Rs {item.priceAtPurchase.toFixed(2)} {t('each')}
                       </p>
                     </div>
                   </div>
@@ -160,7 +160,7 @@ export default function OrderConfirmationClient({ order }: OrderConfirmationClie
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('subtotal')}</span>
-                  <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">Rs {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('shipping')}</span>
@@ -169,13 +169,13 @@ export default function OrderConfirmationClient({ order }: OrderConfirmationClie
                       shipping === 0 ? 'text-green-600' : 'text-gray-900'
                     }`}
                   >
-                    {shipping === 0 ? t('free') : `$${shipping.toFixed(2)}`}
+                    {shipping === 0 ? t('free') : `$Rs {shipping.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-200 pt-3">
                   <span className="text-base font-bold text-gray-900">{t('total')}</span>
                   <span className="text-2xl font-bold text-navy-600">
-                    ${order.totalAmount.toFixed(2)}
+                    Rs {order.totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>

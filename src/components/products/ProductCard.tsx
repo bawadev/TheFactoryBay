@@ -85,10 +85,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="mt-3 flex items-baseline justify-between">
             <div className="flex items-baseline gap-2">
               <span className="text-lg font-bold text-navy-600">
-                ${product.stockPrice.toFixed(2)}
+                Rs {product.stockPrice.toFixed(2)}
               </span>
               <span className="text-sm text-gray-400 line-through">
-                ${product.retailPrice.toFixed(2)}
+                Rs {product.retailPrice.toFixed(2)}
               </span>
             </div>
           </div>

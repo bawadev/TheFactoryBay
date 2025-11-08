@@ -61,6 +61,7 @@ export interface Product {
   stockPrice: number
   retailPrice: number
   sku: string
+  images: string[] // Product-level images (shared across all variants)
   createdAt: string
   updatedAt: string
 }
@@ -71,7 +72,7 @@ export interface ProductVariant {
   size: SizeOption
   color: string
   stockQuantity: number
-  images: string[]
+  images: string[] // DEPRECATED: Use Product.images instead. Kept for backwards compatibility.
 }
 
 // Order types

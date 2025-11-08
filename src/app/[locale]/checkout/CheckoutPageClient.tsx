@@ -181,7 +181,7 @@ export default function CheckoutPageClient({
                         <div className="text-sm text-gray-600">{t('shipDescription')}</div>
                       </div>
                       <div className="text-sm font-medium text-gray-900">
-                        {total >= 100 ? t('free') : '$9.99'}
+                        {total >= 100 ? t('free') : 'Rs 9.99'}
                       </div>
                     </label>
 
@@ -322,7 +322,7 @@ export default function CheckoutPageClient({
                       </p>
                     </div>
                     <div className="text-sm font-medium text-gray-900">
-                      ${(item.product.stockPrice * item.quantity).toFixed(2)}
+                      Rs {(item.product.stockPrice * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -332,18 +332,18 @@ export default function CheckoutPageClient({
               <div className="space-y-3 border-t border-gray-200 pt-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('subtotalItems', { count: itemCount })}</span>
-                  <span className="font-medium text-gray-900">${total.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">Rs {total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('shipping')}</span>
                   <span className={`font-medium ${shipping === 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                    {shipping === 0 ? t('free') : `$${shipping.toFixed(2)}`}
+                    {shipping === 0 ? t('free') : `$Rs {shipping.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-200 pt-3">
                   <span className="text-base font-bold text-gray-900">{t('total')}</span>
                   <span className="text-2xl font-bold text-navy-600">
-                    ${finalTotal.toFixed(2)}
+                    Rs {finalTotal.toFixed(2)}
                   </span>
                 </div>
               </div>

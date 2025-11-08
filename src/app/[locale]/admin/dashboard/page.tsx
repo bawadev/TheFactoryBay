@@ -222,7 +222,7 @@ export default async function AdminDashboardPage() {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <p className="text-sm font-medium text-gray-600">{t('totalRevenue')}</p>
-              <p className="mt-2 text-3xl font-bold text-green-600">$-</p>
+              <p className="mt-2 text-3xl font-bold text-green-600">Rs -</p>
             </div>
           </div>
         </div>

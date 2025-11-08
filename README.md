@@ -62,6 +62,7 @@ That's it! The script will:
 - ✅ Start Neo4j & MinIO containers
 - ✅ Detect empty database and offer to initialize
 - ✅ Create test users automatically
+- ✅ Optionally setup category hierarchy (Ladies/Gents/Kids)
 - ✅ Start Next.js dev server
 - ✅ Show all service URLs and credentials
 
@@ -69,14 +70,61 @@ That's it! The script will:
 
 ### Setup Script Commands
 
+The `./setup.sh` script is your central control panel for managing the entire Factory Bay infrastructure:
+
 ```bash
-./setup.sh start      # Start all services
-./setup.sh stop       # Stop all services
-./setup.sh restart    # Restart all services
-./setup.sh status     # Check service status
-./setup.sh logs <service>  # View logs (nextjs|neo4j|minio)
-./setup.sh help       # Show help
+# Service Management
+./setup.sh start              # Start all services (auto-detects empty DB)
+./setup.sh stop               # Stop all services (data preserved)
+./setup.sh restart            # Restart all services
+./setup.sh status             # Show detailed service status
+
+# Monitoring & Logs
+./setup.sh logs nextjs        # View Next.js development logs
+./setup.sh logs neo4j         # View Neo4j database logs
+./setup.sh logs minio         # View MinIO storage logs
+./setup.sh health             # Run health check on all services
+
+# Reset Commands
+./setup.sh reset soft         # Restart services & clean cache (keeps data)
+./setup.sh reset hard         # Delete ALL data & volumes (requires 'yes')
+
+# Backup & Recovery
+./setup.sh backup all         # Backup both Neo4j and MinIO
+./setup.sh backup neo4j       # Backup database only
+./setup.sh backup minio       # Backup image storage only
+
+# Volume Management
+./setup.sh volumes            # Show Docker volume info & disk usage
+
+# Help
+./setup.sh help               # Show all available commands
 ```
+
+**Why use setup.sh?**
+- ✅ Automatic empty database detection
+- ✅ Interactive prompts for initialization
+- ✅ Shows all credentials on startup
+- ✅ Health checks before starting services
+- ✅ Colored output for easy reading
+- ✅ One command for everything
+
+### Reset Commands Explained
+
+**Soft Reset** (`./setup.sh reset soft`):
+- Restarts all services (Neo4j, MinIO, Next.js)
+- Cleans Next.js build cache (`.next` directory)
+- **Preserves all data** (users, products, orders, images)
+- Use when: Next.js has issues, need fresh start without data loss
+
+**Hard Reset** (`./setup.sh reset hard`):
+- Stops all services
+- **Deletes ALL Docker volumes** (database + images)
+- **PERMANENTLY REMOVES** all users, products, orders, images
+- Requires typing "yes" to confirm
+- Offers to reinitialize database after cleanup
+- Use when: Starting completely fresh, testing from scratch
+- **⚠️ WARNING:** This cannot be undone!
 
 ### Test Accounts (Auto-Created)
 
@@ -114,14 +162,47 @@ npm run dev
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](./CLAUDE.md)** - Developer guide for AI assistants (architecture, commands, patterns)
-- **[USER_LOGIN_GUIDE.md](./USER_LOGIN_GUIDE.md)** - Complete login guide with all credentials
-- **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** - Design system and component specifications
-- **Database Management:**
-  - Run `./setup.sh start` for automated setup
-  - Run `npm run db:init` to initialize schema
-  - Run `npm run db:seed` to create test users
-  - Run `npm run db:clear` to reset database
+### Core Documentation
+
+- **[README.md](./README.md)** (this file) - Project overview and quick start guide
+- **[INFRASTRUCTURE.md](./INFRASTRUCTURE.md)** - Complete infrastructure and data persistence guide
+- **[USER_LOGIN_GUIDE.md](./USER_LOGIN_GUIDE.md)** - Login credentials for all services
+- **[CLAUDE.md](./CLAUDE.md)** - Developer guide for AI assistants
+
+### Quick Links
+
+| What do you need? | Read this |
+|-------------------|-----------|
+| 🚀 Get started quickly | This README (you're here!) |
+| 🔧 Understand Docker volumes & persistence | [INFRASTRUCTURE.md](./INFRASTRUCTURE.md) |
+| 🔐 Login credentials | [USER_LOGIN_GUIDE.md](./USER_LOGIN_GUIDE.md) |
+| 💾 Backup and recovery | [INFRASTRUCTURE.md](./INFRASTRUCTURE.md#backup-and-recovery) |
+| 🐛 Troubleshooting | [INFRASTRUCTURE.md](./INFRASTRUCTURE.md#troubleshooting) |
+| 🤖 AI development | [CLAUDE.md](./CLAUDE.md) |
+
+### Database Management
+
+```bash
+# Automated setup (recommended)
+./setup.sh start          # Start all services with auto-detection
+
+# Manual database operations
+npm run db:init           # Initialize schema
+npm run db:seed           # Create test users
+npm run db:clear          # Reset database
+
+# Category Setup
+npm run setup:categories  # Setup Ladies/Gents/Kids category hierarchy
+                          # Creates ~86 categories organized by:
+                          # - Ladies: Tops, Bottoms, Dresses, Footwear, etc.
+                          # - Gents: Tops, Bottoms, Formal Wear, Footwear, etc.
+                          # - Kids: Boys, Girls, Footwear, Accessories
+
+# Backup and restore
+./setup.sh backup all     # Backup everything
+./setup.sh backup neo4j   # Backup database only
+./setup.sh backup minio   # Backup storage only
+```
 
 ---
 
@@ -195,8 +276,6 @@ factory-bay/
 - Loading states
 - Micro-interactions
 
-See [STYLE_GUIDE.md](./STYLE_GUIDE.md) for complete specifications.
-
 ---
 
 ## 🗄 Database Schema
@@ -267,8 +346,6 @@ We use Playwright MCP for end-to-end testing:
 - [ ] Micro-interactions
 - [ ] Performance optimization
 - [ ] Accessibility improvements
-
-See [PROGRESS.md](./PROGRESS.md) for detailed status.
 
 ---
 
@@ -346,7 +423,7 @@ Private project - All rights reserved.
 
 ## 📞 Support
 
-For setup issues, see [SETUP.md](./SETUP.md) or check:
+For setup issues, see [INFRASTRUCTURE.md](./INFRASTRUCTURE.md) or check:
 - Neo4j connection troubleshooting
 - Environment variable configuration
 - Port conflicts resolution

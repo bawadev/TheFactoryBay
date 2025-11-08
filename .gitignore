@@ -50,5 +50,8 @@ next-env.d.ts
 .playwright-mcp/*.png
 .playwright-mcp/.playwright-mcp/
 
+# Backups (created by setup.sh backup commands)
+/backups/
+
 # Development notes
 devnotes.txt

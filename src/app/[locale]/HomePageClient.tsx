@@ -31,7 +31,7 @@ interface HomePageClientProps {
 function ProductCard({ product }: { product: ProductWithVariants }) {
   const locale = useLocale()
   const t = useTranslations('common')
-  const firstImage = product.variants.find(v => v.images?.length > 0)?.images?.[0]
+  const firstImage = product.images?.[0]
   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
   const discountPercent = Math.round(
     ((product.retailPrice - product.stockPrice) / product.retailPrice) * 100
@@ -71,9 +71,9 @@ function ProductCard({ product }: { product: ProductWithVariants }) {
         <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">{product.brand}</p>
         <h3 className="font-semibold text-gray-900 line-clamp-1 mt-1">{product.name}</h3>
         <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-navy-600">${product.stockPrice.toFixed(2)}</span>
+          <span className="text-lg font-bold text-navy-600">Rs {product.stockPrice.toFixed(2)}</span>
           {product.retailPrice > product.stockPrice && (
-            <span className="text-sm text-gray-400 line-through">${product.retailPrice.toFixed(2)}</span>
+            <span className="text-sm text-gray-400 line-through">Rs {product.retailPrice.toFixed(2)}</span>
           )}
         </div>
         {totalStock > 0 && totalStock <= 5 && (

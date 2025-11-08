@@ -64,8 +64,8 @@ function ProductCard({ product }: { product: ProductWithVariants }) {
         <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
         <p className="text-sm text-gray-600 mt-1">{product.brand}</p>
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-navy-900">${product.stockPrice.toFixed(2)}</span>
-          <span className="text-sm text-gray-500 line-through">${product.retailPrice.toFixed(2)}</span>
+          <span className="text-lg font-bold text-navy-900">Rs {product.stockPrice.toFixed(2)}</span>
+          <span className="text-sm text-gray-500 line-through">Rs {product.retailPrice.toFixed(2)}</span>
         </div>
         <p className="text-xs text-gray-500 mt-1">
           {totalStock > 0 ? `${totalStock} ${t('inStock')}` : t('outOfStock')}

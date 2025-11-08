@@ -8,15 +8,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.pinimg.com',
+        hostname: '**',
       },
       {
         protocol: 'http',
@@ -24,6 +16,12 @@ const nextConfig: NextConfig = {
         port: '9000',
       },
     ],
+  },
+  // Increase body size limit for file uploads (default is 1MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
 }
 

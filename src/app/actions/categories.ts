@@ -602,3 +602,19 @@ export async function getUnassignedProductsAction(categoryId: string) {
     await session.close()
   }
 }
+
+/**
+ * Get categories for a product
+ */
+export async function getCategoriesForProductAction(productId: string) {
+  const session = getSession()
+  try {
+    const categoryIds = await categoryRepo.getCategoriesForProduct(session, productId)
+    return { success: true, data: categoryIds }
+  } catch (error: any) {
+    console.error('Error fetching product categories:', error)
+    return { success: false, error: error.message }
+  } finally {
+    await session.close()
+  }
+}

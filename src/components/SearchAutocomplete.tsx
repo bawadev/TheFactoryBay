@@ -147,9 +147,9 @@ export default function SearchAutocomplete({
                   <h4 className="font-semibold text-gray-900 truncate">{product.name}</h4>
                   <p className="text-sm text-gray-600">{product.brand}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-bold text-navy-900">${product.stockPrice.toFixed(2)}</span>
+                    <span className="font-bold text-navy-900">Rs {product.stockPrice.toFixed(2)}</span>
                     <span className="text-xs text-gray-500 line-through">
-                      ${product.retailPrice.toFixed(2)}
+                      Rs {product.retailPrice.toFixed(2)}
                     </span>
                     {discountPercent > 0 && (
                       <span className="text-xs bg-coral-100 text-coral-700 px-2 py-0.5 rounded-full font-semibold">

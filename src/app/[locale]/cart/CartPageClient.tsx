@@ -130,7 +130,7 @@ export default function CartPageClient({
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('subtotal')}</span>
                   <span className="font-medium text-gray-900">
-                    ${total.toFixed(2)}
+                    Rs {total.toFixed(2)}
                   </span>
                 </div>
 
@@ -138,7 +138,7 @@ export default function CartPageClient({
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('retailPrice')}</span>
                   <span className="font-medium text-gray-400 line-through">
-                    ${retailTotal.toFixed(2)}
+                    Rs {retailTotal.toFixed(2)}
                   </span>
                 </div>
 
@@ -149,7 +149,7 @@ export default function CartPageClient({
                       {t('youSave')}
                     </span>
                     <span className="text-sm font-bold text-gold-700">
-                      ${savings.toFixed(2)}
+                      Rs {savings.toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -158,7 +158,7 @@ export default function CartPageClient({
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('shipping')}</span>
                   <span className="font-medium text-green-600">
-                    {total >= 100 ? t('free') : '$9.99'}
+                    {total >= 100 ? t('free') : 'Rs 9.99'}
                   </span>
                 </div>
 
@@ -174,7 +174,7 @@ export default function CartPageClient({
                   <div className="flex justify-between">
                     <span className="text-base font-bold text-gray-900">{t('total')}</span>
                     <span className="text-2xl font-bold text-navy-600">
-                      ${(total + (total >= 100 ? 0 : 9.99)).toFixed(2)}
+                      Rs {(total + (total >= 100 ? 0 : 9.99)).toFixed(2)}
                     </span>
                   </div>
                 </div>

@@ -97,7 +97,7 @@
       "colors": "Preferred Colors",
       "colorsPlaceholder": "e.g., Black, Navy, White",
       "categories": "Preferred Categories",
-      "priceRange": "Price Range ($)",
+      "priceRange": "Price Range (Rs)",
       "min": "Min",
       "max": "Max",
       "save": "Save Preferences",
@@ -140,7 +140,7 @@
     "addedToCart": "Added to cart!",
     "pleaseSelectSizeAndColor": "Please select a size and color",
     "failedToAddToCart": "Failed to add to cart",
-    "freeShipping": "Free shipping on orders over $100",
+    "freeShipping": "Free shipping on orders over Rs 100",
     "sku": "SKU:",
     "category": "Category:",
     "gender": "Gender:",
@@ -149,7 +149,7 @@
     "description": "Description",
     "noImage": "No Image",
     "discountBadge": "-{percent}% OFF",
-    "saveAmount": "Save ${amount} ({percent}%)",
+    "saveAmount": "Save Rs {amount} ({percent}%)",
     "home": "Home"
   },
   "cart": {

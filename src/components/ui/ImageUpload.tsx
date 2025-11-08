@@ -334,7 +334,7 @@ export default function ImageUpload({
       )}
 
       {/* URL Input Mode */}
-      {uploadMode === 'url' && (!multiple || images.length < maxFiles) && previewFiles.length === 0 && (
+      {uploadMode === 'url' && previewFiles.length === 0 && (!multiple || images.length < maxFiles) && (
         <div className="space-y-3">
           <div className="flex gap-2">
             <input
@@ -365,7 +365,7 @@ export default function ImageUpload({
       )}
 
       {/* File Upload Mode */}
-      {uploadMode === 'file' && (!multiple || images.length < maxFiles) && previewFiles.length === 0 && (
+      {uploadMode === 'file' && previewFiles.length === 0 && (!multiple || images.length < maxFiles) && (
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
             isDragging

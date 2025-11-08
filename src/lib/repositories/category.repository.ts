@@ -566,6 +566,22 @@ export async function assignProductToCategories(
 }
 
 /**
+ * Get categories for a product
+ */
+export async function getCategoriesForProduct(
+  session: Session,
+  productId: string
+): Promise<string[]> {
+  const result = await session.run(
+    `MATCH (p:Product {id: $productId})-[:HAS_CATEGORY]->(c:Category)
+     RETURN c.id as categoryId`,
+    { productId }
+  )
+
+  return result.records.map((record) => record.get('categoryId'))
+}
+
+/**
  * Get products by categories (includes descendants)
  */
 export async function getProductsByCategories(

@@ -23,11 +23,13 @@ import {
   assignProductToCategoriesAction,
   getCategoryTreeAction,
   getCategoryByIdAction,
+  getCategoriesForProductAction,
 } from '@/app/actions/categories'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { ProductCategory, ProductGender, Product, PromotionalCategory, SizeOption } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import CategoryPickerDialog from '@/components/category/CategoryPickerDialog'
+import ProductFormDialog from '@/components/admin/ProductFormDialog'
 import Notification, { type NotificationType } from '@/components/ui/Notification'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
@@ -76,29 +78,17 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     stockPrice: '',
     retailPrice: '',
     sku: '',
+    images: [],
   })
 
-  // Autocomplete state
-  const [nameSuggestions, setNameSuggestions] = useState<ProductWithVariants[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Brand autocomplete state
+  // Brand autocomplete state (for dialog)
   const [allBrands, setAllBrands] = useState<string[]>([])
-  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([])
-  const [showBrandSuggestions, setShowBrandSuggestions] = useState(false)
 
-  // Image management state
-  const [uploadingImages, setUploadingImages] = useState<{ [variantId: string]: boolean }>({})
-  const [viewingImage, setViewingImage] = useState<string | null>(null)
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
-  const [isDraggingOver, setIsDraggingOver] = useState(false)
-  const fileInputRefs = useRef<{ [variantId: string]: HTMLInputElement | null }>({})
 
-  // Form collapse state
-  const [isFormExpanded, setIsFormExpanded] = useState(true)
-  const [allowAutoMinimize, setAllowAutoMinimize] = useState(true)
+  // Form dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Sorting state
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'price' | 'variants' | 'stock'>('name')
@@ -159,10 +149,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     setNotification(prev => ({ ...prev, isOpen: false }))
   }
 
-  const nameInputRef = useRef<HTMLInputElement>(null)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
-  const brandInputRef = useRef<HTMLInputElement>(null)
-  const brandSuggestionsRef = useRef<HTMLDivElement>(null)
 
   // Load all brands on mount
   useEffect(() => {
@@ -193,124 +179,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     loadCategories()
   }, [formData.categoryIds])
 
-  // ESC key handler for image viewer
-  useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && viewingImage) {
-        setViewingImage(null)
-      }
-    }
-
-    document.addEventListener('keydown', handleEscKey)
-    return () => document.removeEventListener('keydown', handleEscKey)
-  }, [viewingImage])
-
-  // Scroll handler to minimize form
-  useEffect(() => {
-    let lastScrollY = window.scrollY
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-
-      // If scrolling down and scrolled past 100px, minimize the form (only if allowed)
-      if (allowAutoMinimize && currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsFormExpanded(false)
-      }
-
-      lastScrollY = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [allowAutoMinimize])
-
-  // Handle click outside to close suggestions
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node) &&
-        nameInputRef.current &&
-        !nameInputRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false)
-      }
-
-      if (
-        brandSuggestionsRef.current &&
-        !brandSuggestionsRef.current.contains(event.target as Node) &&
-        brandInputRef.current &&
-        !brandInputRef.current.contains(event.target as Node)
-      ) {
-        setShowBrandSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  // Search for product names as user types
-  useEffect(() => {
-    const searchProducts = async () => {
-      if (formData.name.length < 2) {
-        setNameSuggestions([])
-        return
-      }
-
-      const result = await searchProductsByNameAction(formData.name)
-      if (result.success && result.data) {
-        setNameSuggestions(result.data.products)
-      }
-    }
-
-    const debounceTimer = setTimeout(searchProducts, 300)
-    return () => clearTimeout(debounceTimer)
-  }, [formData.name])
-
-  // Filter brands as user types
-  useEffect(() => {
-    if (formData.brand.length === 0) {
-      setBrandSuggestions([])
-      return
-    }
-
-    const filtered = allBrands.filter(brand =>
-      brand.toLowerCase().includes(formData.brand.toLowerCase())
-    ).slice(0, 10) // Limit to 10 suggestions
-
-    setBrandSuggestions(filtered)
-  }, [formData.brand, allBrands])
-
-  // Check for duplicates on blur
-  const handleNameBlur = async () => {
-    if (!formData.name.trim()) {
-      setDuplicateWarning(null)
-      return
-    }
-
-    const result = await checkProductNameExistsAction(formData.name, editingId || undefined)
-
-    if (result.success && result.data?.exists && result.data.product) {
-      const existingProduct = result.data.product
-      setDuplicateWarning(
-        `A product with this name already exists (${existingProduct.brand} - ${existingProduct.category}). Click to load it.`
-      )
-    } else {
-      setDuplicateWarning(null)
-    }
-  }
-
-  const handleLoadExistingProduct = async () => {
-    if (!formData.name.trim()) return
-
-    const result = await checkProductNameExistsAction(formData.name, editingId || undefined)
-
-    if (result.success && result.data?.exists && result.data.product) {
-      loadProductIntoForm(result.data.product)
-      setDuplicateWarning(null)
-    }
-  }
 
   const handleDelete = async (productId: string, productName: string) => {
     setConfirmDialog({
@@ -396,15 +264,20 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     setEditingId(product.id)
     setEditingProduct(product)
 
+    // Fetch product categories
+    const categoriesResult = await getCategoriesForProductAction(product.id)
+    const categoryIds = categoriesResult.success && categoriesResult.data ? categoriesResult.data : []
+
     setFormData({
       name: product.name,
       description: product.description,
       brand: product.brand,
-      categoryIds: [],
+      categoryIds,
       gender: product.gender,
       stockPrice: product.stockPrice.toString(),
       retailPrice: product.retailPrice.toString(),
       sku: product.sku,
+      images: product.images || [],
     })
 
     // Load variants
@@ -415,19 +288,8 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       stockQuantity: v.stockQuantity
     })))
 
-    setDuplicateWarning(null)
-    setShowSuggestions(false)
-    setShowBrandSuggestions(false)
-    setIsFormExpanded(true)
-
-    // Disable auto-minimize temporarily to prevent immediate collapse
-    setAllowAutoMinimize(false)
-    setTimeout(() => {
-      setAllowAutoMinimize(true)
-    }, 500) // Wait 500ms before allowing auto-minimize again
-
-    // Set first variant as selected
-    setSelectedVariantId(product.variants.length > 0 ? product.variants[0].id : null)
+    // Open dialog
+    setIsDialogOpen(true)
   }
 
   const resetForm = () => {
@@ -439,112 +301,17 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       description: '',
       brand: '',
       categoryIds: [],
-      filterIds: [],
       gender: 'UNISEX',
       stockPrice: '',
       retailPrice: '',
       sku: '',
+      images: [],
     })
     setVariants([])
     setVariantForm({ size: 'M', color: '', stockQuantity: 0 })
     setShowVariantForm(false)
     setEditingVariantIndex(null)
-    setDuplicateWarning(null)
-    setShowSuggestions(false)
-    setShowBrandSuggestions(false)
-    setSelectedVariantId(null)
-  }
-
-  // Image management functions
-  const handleImageUpload = async (variantId: string, files: FileList) => {
-    if (!files || files.length === 0) return
-
-    setUploadingImages(prev => ({ ...prev, [variantId]: true }))
-
-    try {
-      const formData = new FormData()
-      for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i])
-      }
-
-      const uploadResult = await uploadMultipleImages(formData)
-
-      if (uploadResult.success && uploadResult.urls) {
-        // Add each uploaded image to the variant
-        let hasError = false
-        for (const url of uploadResult.urls) {
-          const result = await addVariantImageAction(variantId, url)
-          if (!result.success) {
-            showNotification('error', 'Failed to add image', result.message || 'Failed to add image')
-            hasError = true
-          }
-        }
-
-        // Refresh the editing product
-        if (editingProduct) {
-          const updatedProduct = products.find(p => p.id === editingProduct.id)
-          if (updatedProduct) {
-            setEditingProduct(updatedProduct)
-          }
-        }
-
-        if (!hasError) {
-          showNotification('success', 'Images uploaded successfully!')
-        }
-      } else {
-        showNotification('error', 'Failed to upload images', uploadResult.message || 'Failed to upload images')
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      showNotification('error', 'Upload error', 'An error occurred while uploading images')
-    } finally {
-      setUploadingImages(prev => ({ ...prev, [variantId]: false }))
-    }
-  }
-
-  const handleImageRemove = async (variantId: string, imageUrl: string) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Remove Image',
-      message: 'Are you sure you want to remove this image?',
-      onConfirm: async () => {
-        setConfirmDialog({ ...confirmDialog, isOpen: false })
-
-        try {
-          // Remove from variant
-          const result = await removeVariantImageAction(variantId, imageUrl)
-
-          if (result.success) {
-            // Delete from storage
-            await deleteImage(imageUrl)
-
-            // Update editing product
-            if (editingProduct) {
-              const updatedVariants = editingProduct.variants.map(v =>
-                v.id === variantId
-                  ? { ...v, images: v.images.filter(img => img !== imageUrl) }
-                  : v
-              )
-              setEditingProduct({ ...editingProduct, variants: updatedVariants })
-
-              // Update products list
-              setProducts(products.map(p =>
-                p.id === editingProduct.id
-                  ? { ...p, variants: updatedVariants }
-                  : p
-              ))
-            }
-
-            showNotification('success', 'Image removed successfully!')
-          } else {
-            showNotification('error', 'Failed to remove image', result.message || 'Failed to remove image')
-          }
-        } catch (error) {
-          console.error('Remove error:', error)
-          showNotification('error', 'Remove error', 'An error occurred while removing image')
-        }
-      }
-    })
+    setIsDialogOpen(false)
   }
 
   // Sorting function
@@ -637,27 +404,25 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
     setEditingVariantIndex(null)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleSubmit = async (formDataParam: FormData, variantsParam: VariantFormData[]) => {
     // Validation
-    if (!formData.name.trim() || !formData.brand.trim()) {
+    if (!formDataParam.name.trim() || !formDataParam.brand.trim()) {
       showNotification('warning', 'Missing required fields', 'Please fill in all required fields (Name, Brand)')
       return
     }
 
-    if (formData.categoryIds.length === 0) {
+    if (formDataParam.categoryIds.length === 0) {
       showNotification('warning', 'No categories selected', 'Please select at least one category (leaf categories only)')
       return
     }
 
-    if (variants.length === 0) {
+    if (variantsParam.length === 0) {
       showNotification('warning', 'No variants added', 'Please add at least one variant (size, color, stock)')
       return
     }
 
-    const stockPrice = parseFloat(formData.stockPrice)
-    const retailPrice = parseFloat(formData.retailPrice)
+    const stockPrice = parseFloat(formDataParam.stockPrice)
+    const retailPrice = parseFloat(formDataParam.retailPrice)
 
     if (isNaN(stockPrice) || isNaN(retailPrice) || stockPrice <= 0 || retailPrice <= 0) {
       showNotification('warning', 'Invalid prices', 'Please enter valid prices')
@@ -670,20 +435,21 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
       if (isEditing && editingId) {
         // Update existing product
         const updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>> = {
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          brand: formData.brand.trim(),
-          gender: formData.gender,
+          name: formDataParam.name.trim(),
+          description: formDataParam.description.trim(),
+          brand: formDataParam.brand.trim(),
+          gender: formDataParam.gender,
           stockPrice,
           retailPrice,
-          sku: formData.sku.trim(),
+          sku: formDataParam.sku.trim(),
+          images: formDataParam.images || [],
         }
 
         const result = await updateProductAction(editingId, updates)
 
         if (result.success) {
           // Assign product to selected categories
-          await assignProductToCategoriesAction(editingId, formData.categoryIds)
+          await assignProductToCategoriesAction(editingId, formDataParam.categoryIds)
 
           // Refresh the products list
           const updatedProducts = products.map(p =>
@@ -699,18 +465,22 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         }
       } else {
         // Create new product with variants
+        // Auto-generate SKU if not provided (to avoid uniqueness constraint violations)
+        const effectiveSku = formDataParam.sku.trim() || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
         const newProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          brand: formData.brand.trim(),
-          gender: formData.gender,
+          name: formDataParam.name.trim(),
+          description: formDataParam.description.trim(),
+          brand: formDataParam.brand.trim(),
+          gender: formDataParam.gender,
           stockPrice,
           retailPrice,
-          sku: formData.sku.trim(),
+          sku: effectiveSku,
+          images: formDataParam.images || []
         }
 
         // Convert variants to the format expected by createProductAction
-        const variantsToCreate = variants.map(v => ({
+        const variantsToCreate = variantsParam.map(v => ({
           size: v.size,
           color: v.color,
           stockQuantity: v.stockQuantity,
@@ -721,7 +491,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
 
         if (result.success && result.data) {
           // Assign product to selected categories
-          await assignProductToCategoriesAction(result.data.product.id, formData.categoryIds)
+          await assignProductToCategoriesAction(result.data.product.id, formDataParam.categoryIds)
 
           setProducts([result.data.product, ...products])
           showNotification('success', 'Product created successfully with variants!')
@@ -758,663 +528,44 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         </div>
       </div>
 
-      {/* Sticky Form Section */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-md">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      {/* Quick Actions Bar */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div
-              className={`flex items-center gap-4 ${!isFormExpanded ? 'cursor-pointer' : ''}`}
-              onClick={() => {
-                if (!isFormExpanded) {
-                  setIsFormExpanded(true)
-                  // Disable auto-minimize temporarily to prevent immediate collapse
-                  setAllowAutoMinimize(false)
-                  setTimeout(() => {
-                    setAllowAutoMinimize(true)
-                  }, 500)
-                }
-              }}
-            >
+            <h2 className="text-lg font-semibold text-gray-900">Product Management</h2>
+            <div className="flex items-center gap-3">
               <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const newExpandedState = !isFormExpanded
-                  setIsFormExpanded(newExpandedState)
-                  // If expanding, disable auto-minimize temporarily
-                  if (newExpandedState) {
-                    setAllowAutoMinimize(false)
-                    setTimeout(() => {
-                      setAllowAutoMinimize(true)
-                    }, 500)
-                  }
-                }}
-                className={`p-2 rounded-lg transition-all ${
-                  !isFormExpanded && isEditing
-                    ? 'animate-pulse bg-blue-100 hover:bg-blue-200 shadow-lg shadow-blue-300 ring-2 ring-blue-400'
-                    : 'hover:bg-gray-100'
-                }`}
-                title={isFormExpanded ? 'Minimize form' : 'Expand form'}
+                onClick={() => setIsDialogOpen(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors flex items-center gap-2"
               >
-                <svg
-                  className={`w-5 h-5 transition-all ${
-                    isFormExpanded ? 'rotate-180 text-gray-600' : !isFormExpanded && isEditing ? 'text-blue-700' : 'text-gray-600'
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
+                Add Product
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-navy-900">
-                  {isEditing ? 'Update Product' : 'Add Product'}
-                </h1>
-                {!isFormExpanded && (
-                  <p className="text-xs text-gray-500">
-                    {isEditing ? 'Editing: ' + formData.name : 'Type product name to search'}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isEditing && editingId && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="px-4 py-2 text-sm text-white bg-coral-600 hover:bg-coral-700 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'Saving...' : 'Update Product'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (editingId) {
-                        const product = products.find(p => p.id === editingId)
-                        if (product) {
-                          handleDelete(editingId, product.name)
-                        }
-                      }
-                    }}
-                    className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
-                  >
-                    Delete Product
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="px-4 py-2 text-sm text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg font-medium transition-colors shadow-sm"
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
               <Link href={`/${locale}/admin/dashboard`} className="text-sm text-navy-600 hover:text-navy-700 font-medium">
                 ← Back to Dashboard
               </Link>
             </div>
           </div>
-
-          {/* Product Form */}
-          {isFormExpanded && (
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-
-            {/* Image Management Section - Split Layout */}
-            {isEditing && editingProduct && editingProduct.variants.length > 0 && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Product Images</h3>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Left Side: Variant Selector + Image Gallery */}
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Select Variant</label>
-                      <select
-                        value={selectedVariantId || ''}
-                        onChange={(e) => setSelectedVariantId(e.target.value)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                      >
-                        {editingProduct.variants.map((variant) => (
-                          <option key={variant.id} value={variant.id}>
-                            Size: {variant.size} | Color: {variant.color} | Stock: {variant.stockQuantity}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Image Gallery */}
-                    {selectedVariantId && (() => {
-                      const selectedVariant = editingProduct.variants.find(v => v.id === selectedVariantId)
-                      if (!selectedVariant) return null
-
-                      return (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-2">
-                            Current Images ({selectedVariant.images?.length || 0})
-                          </label>
-                          <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-2 min-h-[88px]"
-                            onWheel={(e) => {
-                              e.stopPropagation()
-                              e.currentTarget.scrollLeft += e.deltaY
-                            }}
-                          >
-                            {selectedVariant.images && selectedVariant.images.length > 0 ? (
-                              selectedVariant.images.map((imageUrl, idx) => (
-                                <div key={`${selectedVariant.id}-${idx}`} className="relative flex-shrink-0 group">
-                                  <div className="h-20 w-20 rounded-lg overflow-hidden bg-white border-2 border-gray-300 hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer shadow-sm">
-                                    <Image
-                                      src={imageUrl}
-                                      alt={`${selectedVariant.size} ${selectedVariant.color}`}
-                                      width={80}
-                                      height={80}
-                                      className="w-full h-full object-cover"
-                                      onClick={() => setViewingImage(imageUrl)}
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleImageRemove(selectedVariant.id, imageUrl)}
-                                    className="absolute -top-1 -right-1 p-0.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-md"
-                                    title="Remove image"
-                                  >
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="flex items-center justify-center w-full h-20 text-xs text-gray-400 italic border-2 border-dashed border-gray-300 rounded-lg">
-                                No images yet
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-
-                  {/* Right Side: Drag & Drop Upload Component */}
-                  {selectedVariantId && (() => {
-                    const selectedVariant = editingProduct.variants.find(v => v.id === selectedVariantId)
-                    if (!selectedVariant) return null
-
-                    return (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Upload Images</label>
-                        <input
-                          ref={el => { fileInputRefs.current[selectedVariant.id] = el }}
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files) {
-                              handleImageUpload(selectedVariant.id, e.target.files)
-                              setIsDraggingOver(false)
-                            }
-                          }}
-                          className="hidden"
-                        />
-                        <div
-                          onDragOver={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setIsDraggingOver(true)
-                          }}
-                          onDragLeave={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setIsDraggingOver(false)
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setIsDraggingOver(false)
-                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                              handleImageUpload(selectedVariant.id, e.dataTransfer.files)
-                            }
-                          }}
-                          onClick={() => !uploadingImages[selectedVariant.id] && fileInputRefs.current[selectedVariant.id]?.click()}
-                          className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 cursor-pointer transition-all ${
-                            isDraggingOver
-                              ? 'border-blue-500 bg-blue-50'
-                              : uploadingImages[selectedVariant.id]
-                              ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
-                              : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                          }`}
-                          style={{ minHeight: '140px' }}
-                        >
-                          {uploadingImages[selectedVariant.id] ? (
-                            <>
-                              <svg className="w-10 h-10 text-blue-500 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <p className="text-sm text-gray-600 font-medium">Uploading...</p>
-                              <p className="text-xs text-gray-500 mt-1">Please wait</p>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-10 h-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                              </svg>
-                              <p className="text-sm text-gray-700 font-medium mb-1">
-                                {isDraggingOver ? 'Drop images here' : 'Drag & drop images'}
-                              </p>
-                              <p className="text-xs text-gray-500 mb-2">or</p>
-                              <button
-                                type="button"
-                                className="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  fileInputRefs.current[selectedVariant.id]?.click()
-                                }}
-                              >
-                                Browse Files
-                              </button>
-                              <p className="text-xs text-gray-400 mt-3">PNG, JPG, GIF up to 10MB</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Product Name with Autocomplete */}
-              <div className="relative">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Name *
-                </label>
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value })
-                    setShowSuggestions(true)
-                    setDuplicateWarning(null)
-                  }}
-                  onBlur={handleNameBlur}
-                  onFocus={() => setShowSuggestions(true)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  placeholder="Type to search existing products..."
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-500">Start typing to see suggestions</p>
-
-                {/* Autocomplete Suggestions */}
-                {showSuggestions && nameSuggestions.length > 0 && formData.name.length >= 2 && (
-                  <div
-                    ref={suggestionsRef}
-                    className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                  >
-                    {nameSuggestions.map((product) => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        onClick={() => loadProductIntoForm(product)}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        <div className="text-xs text-gray-500">{product.brand} - {product.category}</div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Duplicate Warning */}
-                {duplicateWarning && (
-                  <button
-                    type="button"
-                    onClick={handleLoadExistingProduct}
-                    className="mt-1 text-xs text-amber-600 hover:text-amber-700 cursor-pointer underline"
-                  >
-                    {duplicateWarning}
-                  </button>
-                )}
-              </div>
-
-              {/* Brand with Autocomplete */}
-              <div className="relative">
-                <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
-                  Brand *
-                </label>
-                <input
-                  ref={brandInputRef}
-                  type="text"
-                  id="brand"
-                  value={formData.brand}
-                  onChange={(e) => {
-                    setFormData({ ...formData, brand: e.target.value })
-                    setShowBrandSuggestions(true)
-                  }}
-                  onFocus={() => setShowBrandSuggestions(true)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  placeholder="Enter brand"
-                  required
-                />
-
-                {/* Brand Autocomplete Suggestions */}
-                {showBrandSuggestions && brandSuggestions.length > 0 && (
-                  <div
-                    ref={brandSuggestionsRef}
-                    className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                  >
-                    {brandSuggestions.map((brand) => (
-                      <button
-                        key={brand}
-                        type="button"
-                        onClick={() => {
-                          setFormData({ ...formData, brand })
-                          setShowBrandSuggestions(false)
-                        }}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="text-sm font-medium text-gray-900">{brand}</div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* SKU */}
-              <div>
-                <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">
-                  SKU
-                </label>
-                <input
-                  type="text"
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  placeholder="Enter SKU (optional)"
-                />
-              </div>
-
-              {/* Categories (Filters) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Categories * <span className="text-xs text-gray-500">(Leaf categories only)</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowFormCategoryPicker(true)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors text-left flex items-center justify-between"
-                >
-                  <span className="text-gray-700">
-                    {formData.categoryIds.length > 0
-                      ? `${formData.categoryIds.length} categories selected`
-                      : 'Select categories'}
-                  </span>
-                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                {/* Selected Categories Chips */}
-                {selectedCategories.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {selectedCategories.map((category) => {
-                      const hierarchyColor =
-                        category.hierarchy === 'ladies' ? 'bg-pink-100 text-pink-800' :
-                        category.hierarchy === 'gents' ? 'bg-blue-100 text-blue-800' :
-                        category.hierarchy === 'kids' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-
-                      return (
-                        <div
-                          key={category.id}
-                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${hierarchyColor}`}
-                        >
-                          <span>{category.name}</span>
-                          <span className="text-xs opacity-70">({category.hierarchy})</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              // Remove this category
-                              const newCategoryIds = formData.categoryIds.filter(id => id !== category.id)
-                              setFormData({ ...formData, categoryIds: newCategoryIds })
-                            }}
-                            className="ml-1 hover:bg-indigo-200 rounded-full p-0.5 transition-colors"
-                            title="Remove category"
-                          >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Gender */}
-              <div>
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender *
-                </label>
-                <select
-                  id="gender"
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value as ProductGender })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  required
-                >
-                  {GENDERS.map((gen) => (
-                    <option key={gen} value={gen}>
-                      {gen}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Stock Price */}
-              <div>
-                <label htmlFor="stockPrice" className="block text-sm font-medium text-gray-700 mb-1">
-                  Stock Price ($) *
-                </label>
-                <input
-                  type="number"
-                  id="stockPrice"
-                  step="0.01"
-                  min="0"
-                  value={formData.stockPrice}
-                  onChange={(e) => setFormData({ ...formData, stockPrice: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              {/* Retail Price */}
-              <div>
-                <label htmlFor="retailPrice" className="block text-sm font-medium text-gray-700 mb-1">
-                  Retail Price ($) *
-                </label>
-                <input
-                  type="number"
-                  id="retailPrice"
-                  step="0.01"
-                  min="0"
-                  value={formData.retailPrice}
-                  onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={2}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent resize-none"
-                placeholder="Enter product description"
-              />
-            </div>
-
-            {/* Variants Management Section */}
-            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">Product Variants *</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowVariantForm(!showVariantForm)}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
-                >
-                  {showVariantForm ? 'Cancel' : '+ Add Variant'}
-                </button>
-              </div>
-
-              {/* Add/Edit Variant Form */}
-              {showVariantForm && (
-                <div className="mb-4 p-3 border border-indigo-200 rounded-lg bg-white">
-                  <h4 className="text-xs font-semibold text-gray-700 mb-2">
-                    {editingVariantIndex !== null ? 'Edit Variant' : 'New Variant'}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Size *</label>
-                      <select
-                        value={variantForm.size}
-                        onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value as SizeOption })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        {SIZES.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Color *</label>
-                      <input
-                        type="text"
-                        value={variantForm.color}
-                        onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="e.g., Red, Blue"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Stock Quantity *</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={variantForm.stockQuantity}
-                        onChange={(e) => setVariantForm({ ...variantForm, stockQuantity: parseInt(e.target.value) || 0 })}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={handleAddVariant}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
-                    >
-                      {editingVariantIndex !== null ? 'Update Variant' : 'Add Variant'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelVariantForm}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Variants List */}
-              {variants.length > 0 ? (
-                <div className="space-y-2">
-                  {variants.map((variant, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-indigo-300 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-900">
-                            Size: {variant.size}
-                          </span>
-                          <span className="text-sm text-gray-600">|</span>
-                          <span className="text-sm font-medium text-gray-900">
-                            Color: {variant.color}
-                          </span>
-                          <span className="text-sm text-gray-600">|</span>
-                          <span className="text-sm font-medium text-green-600">
-                            Stock: {variant.stockQuantity}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleEditVariant(index)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          title="Edit variant"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteVariant(index)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Delete variant"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-sm text-gray-500 italic">
-                  No variants added yet. Click &quot;+ Add Variant&quot; to create one.
-                </div>
-              )}
-            </div>
-
-            {/* Submit Button - Only show when adding new product */}
-            {!isEditing && (
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? 'Saving...' : 'Add Product'}
-                </button>
-              </div>
-            )}
-          </form>
-          )}
         </div>
       </div>
+
+      {/* Product Form Dialog */}
+      <ProductFormDialog
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false)
+          resetForm()
+        }}
+        onSubmit={handleSubmit}
+        editingProduct={editingProduct}
+        isEditing={isEditing}
+        allBrands={allBrands}
+        onLoadProduct={loadProductIntoForm}
+        onOpenCategoryPicker={() => setShowFormCategoryPicker(true)}
+        selectedCategoryIds={formData.categoryIds}
+      />
 
       {/* Products Table */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -1500,7 +651,7 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedProducts.map((product) => {
                   const totalStock = product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
-                  const firstImage = product.variants[0]?.images?.[0]
+                  const firstImage = product.images?.[0]
 
                   return (
                     <tr
@@ -1539,8 +690,8 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
                         <div className="text-xs text-gray-500">{product.gender}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">${product.stockPrice.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500 line-through">${product.retailPrice.toFixed(2)}</div>
+                        <div className="text-sm font-semibold text-gray-900">Rs {product.stockPrice.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500 line-through">Rs {product.retailPrice.toFixed(2)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{product.variants.length} variants</div>
@@ -1636,32 +787,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         )}
       </div>
 
-      {/* Image Viewer Modal */}
-      {viewingImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4"
-          onClick={() => setViewingImage(null)}
-        >
-          <div className="relative max-w-4xl max-h-full">
-            <button
-              onClick={() => setViewingImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300"
-            >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <Image
-              src={viewingImage}
-              alt="Full size"
-              width={1200}
-              height={1200}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Section Assignment Dialog */}
       {showSectionDialog && selectedProductForSection && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1692,9 +817,9 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
               <div className="flex items-center gap-4">
                 <div className="relative w-20 h-20 bg-gray-100 rounded flex-shrink-0">
-                  {selectedProductForSection.variants[0]?.images[0] && (
+                  {selectedProductForSection.images?.[0] && (
                     <Image
-                      src={selectedProductForSection.variants[0].images[0]}
+                      src={selectedProductForSection.images[0]}
                       alt={selectedProductForSection.name}
                       fill
                       className="object-cover rounded"

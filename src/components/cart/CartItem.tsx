@@ -52,9 +52,9 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
         href={`/${locale}/product/${item.product.id}`}
         className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100"
       >
-        {item.variant.images?.[0] ? (
+        {item.product.images?.[0] ? (
           <Image
-            src={item.variant.images[0]}
+            src={item.product.images[0]}
             alt={item.product.name}
             fill
             className="object-cover"
@@ -88,10 +88,10 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
           {/* Price */}
           <div className="text-right">
             <p className="text-sm font-bold text-navy-600">
-              ${itemTotal.toFixed(2)}
+              Rs {itemTotal.toFixed(2)}
             </p>
             <p className="text-xs text-gray-500">
-              ${item.product.stockPrice.toFixed(2)} each
+              Rs {item.product.stockPrice.toFixed(2)} each
             </p>
           </div>
         </div>

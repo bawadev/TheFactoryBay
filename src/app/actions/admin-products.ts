@@ -11,6 +11,8 @@ import {
   updateVariant,
   deleteVariant,
   getAllBrands,
+  addProductImage,
+  removeProductImage,
   type ProductWithVariants,
 } from '@/lib/repositories/product.repository'
 import type { ActionResponse, Product, ProductVariant } from '@/lib/types'
@@ -400,6 +402,70 @@ export async function removeVariantImageAction(
     return {
       success: false,
       message: 'Failed to remove image',
+    }
+  }
+}
+
+/**
+ * Add an image to a product (product-level, shared across all variants)
+ */
+export async function addProductImageAction(
+  productId: string,
+  imageUrl: string
+): Promise<ActionResponse<null>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    await addProductImage(productId, imageUrl)
+
+    return {
+      success: true,
+      message: 'Image added to product successfully',
+    }
+  } catch (error) {
+    console.error('Add product image error:', error)
+    return {
+      success: false,
+      message: 'Failed to add image to product',
+    }
+  }
+}
+
+/**
+ * Remove an image from a product
+ */
+export async function removeProductImageAction(
+  productId: string,
+  imageUrl: string
+): Promise<ActionResponse<null>> {
+  const adminAccess = await isAdmin()
+
+  if (!adminAccess) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    await removeProductImage(productId, imageUrl)
+
+    return {
+      success: true,
+      message: 'Image removed from product successfully',
+    }
+  } catch (error) {
+    console.error('Remove product image error:', error)
+    return {
+      success: false,
+      message: 'Failed to remove image from product',
     }
   }
 }

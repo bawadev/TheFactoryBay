@@ -97,7 +97,7 @@
       "colors": "කැමති වර්ණ",
       "colorsPlaceholder": "උදා: කළු, නේවි, සුදු",
       "categories": "කැමති කාණ්ඩ",
-      "priceRange": "මිල පරාසය ($)",
+      "priceRange": "මිල පරාසය (Rs)",
       "min": "අවම",
       "max": "උපරිම",
       "save": "මනාපයන් සුරකින්න",
@@ -149,7 +149,7 @@
     "description": "විස්තරය",
     "noImage": "රූපයක් නැත",
     "discountBadge": "-{percent}% වට්ටම",
-    "saveAmount": "${amount} ඉතිරි කරගන්න ({percent}%)",
+    "saveAmount": "Rs {amount} ඉතිරි කරගන්න ({percent}%)",
     "home": "මුල් පිටුව"
   },
   "cart": {
@@ -177,7 +177,7 @@
     "continueShopping": "← සාප්පු සවාරි දිගටම කරගෙන යන්න",
     "youSave": "ඔබ ඉතිරි කරගන්නවා",
     "retailPrice": "සිල්ලර මිල",
-    "addMoreForFreeShipping": "නොමිලේ බෙදා හැරීම සඳහා තවත් ${amount} එක් කරන්න",
+    "addMoreForFreeShipping": "නොමිලේ බෙදා හැරීම සඳහා තවත් Rs {amount} එක් කරන්න",
     "secureCheckout": "ෆැක්ටරි බේ මගින් ආරක්ෂිත ගෙවීම",
     "failedToLoad": "කරත්තය පූරණය කිරීම අසාර්ථක විය",
     "noImage": "රූපයක් නැත"

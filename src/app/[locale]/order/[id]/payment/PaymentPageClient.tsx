@@ -151,7 +151,7 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-900 font-medium">{t('paymentAmount')}</p>
                   <p className="text-3xl font-bold text-blue-600 mt-1">
-                    ${order.totalAmount.toFixed(2)}
+                    Rs {order.totalAmount.toFixed(2)}
                   </p>
                   <p className="text-xs text-blue-700 mt-2">{t('paymentNote')}</p>
                 </div>
@@ -268,7 +268,7 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
               <div className="border-t border-gray-200 pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('total')}</span>
-                  <span className="font-bold text-gray-900">${order.totalAmount.toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">Rs {order.totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">{t('deliveryMethod')}</span>

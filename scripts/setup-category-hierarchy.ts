@@ -1,337 +1,472 @@
 #!/usr/bin/env tsx
 /**
- * Setup Category Hierarchy
+ * Setup Classic Clothing Category Hierarchy
  *
- * Creates the three root hierarchies (Ladies, Gents, Kids) with their subcategories.
- * This script implements a single-parent tree structure for product categorization.
+ * Creates a comprehensive clothing category system with three main hierarchies:
+ * - Ladies (Women's Clothing)
+ * - Gents (Men's Clothing)
+ * - Kids (Children's Clothing)
  *
- * Hierarchy Structure:
- * - Ladies (L0)
- *   - Clothing (L1)
- *     - Tops (L2)
- *       - T-Shirts, Blouses, Shirts, Sweaters (L3)
- *     - Bottoms (L2)
- *       - Jeans, Trousers, Skirts, Shorts (L3)
- *     - Dresses (L2)
- *     - Outerwear (L2)
- *   - Footwear (L1)
- *   - Accessories (L1)
- *
- * - Gents (L0)
- *   - Clothing (L1)
- *     - Tops (L2)
- *     - Bottoms (L2)
- *     - Outerwear (L2)
- *   - Footwear (L1)
- *   - Accessories (L1)
- *
- * - Kids (L0)
- *   - Clothing (L1)
- *   - Footwear (L1)
- *   - Accessories (L1)
+ * Structure follows industry-standard clothing categorization
+ * with single-parent tree relationships.
  *
  * Usage: npm run setup:categories
  */
 
+import dotenv from 'dotenv'
 import { getSession } from '../src/lib/db'
 import {
   createCategory,
   getCategoryTree
 } from '../src/lib/repositories/category.repository'
 
-interface CategoryDefinition {
+// Load environment variables
+dotenv.config({ path: '.env.local' })
+
+interface CategoryDef {
   name: string
-  children?: CategoryDefinition[]
-  isFeatured?: boolean
+  featured?: boolean
+  children?: CategoryDef[]
 }
 
-const CATEGORY_STRUCTURE: Record<string, CategoryDefinition[]> = {
-  ladies: [
-    {
-      name: 'Clothing',
-      isFeatured: true,
-      children: [
-        {
-          name: 'Tops',
-          children: [
-            { name: 'T-Shirts' },
-            { name: 'Blouses' },
-            { name: 'Shirts' },
-            { name: 'Sweaters' },
-            { name: 'Tank Tops' }
-          ]
-        },
-        {
-          name: 'Bottoms',
-          children: [
-            { name: 'Jeans' },
-            { name: 'Trousers' },
-            { name: 'Skirts' },
-            { name: 'Shorts' },
-            { name: 'Leggings' }
-          ]
-        },
-        {
-          name: 'Dresses',
-          children: [
-            { name: 'Casual Dresses' },
-            { name: 'Evening Dresses' },
-            { name: 'Maxi Dresses' },
-            { name: 'Midi Dresses' }
-          ]
-        },
-        {
-          name: 'Outerwear',
-          children: [
-            { name: 'Jackets' },
-            { name: 'Coats' },
-            { name: 'Blazers' },
-            { name: 'Cardigans' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'Footwear',
-      isFeatured: true,
-      children: [
-        { name: 'Heels' },
-        { name: 'Flats' },
-        { name: 'Boots' },
-        { name: 'Sneakers' },
-        { name: 'Sandals' }
-      ]
-    },
-    {
-      name: 'Accessories',
-      isFeatured: true,
-      children: [
-        { name: 'Bags' },
-        { name: 'Jewelry' },
-        { name: 'Scarves' },
-        { name: 'Belts' },
-        { name: 'Hats' }
-      ]
-    }
-  ],
-  gents: [
-    {
-      name: 'Clothing',
-      isFeatured: true,
-      children: [
-        {
-          name: 'Tops',
-          children: [
-            { name: 'T-Shirts' },
-            { name: 'Shirts' },
-            { name: 'Polo Shirts' },
-            { name: 'Sweaters' },
-            { name: 'Hoodies' }
-          ]
-        },
-        {
-          name: 'Bottoms',
-          children: [
-            { name: 'Jeans' },
-            { name: 'Trousers' },
-            { name: 'Chinos' },
-            { name: 'Shorts' },
-            { name: 'Track Pants' }
-          ]
-        },
-        {
-          name: 'Formal Wear',
-          children: [
-            { name: 'Suits' },
-            { name: 'Dress Shirts' },
-            { name: 'Dress Trousers' },
-            { name: 'Blazers' },
-            { name: 'Ties' }
-          ]
-        },
-        {
-          name: 'Outerwear',
-          children: [
-            { name: 'Jackets' },
-            { name: 'Coats' },
-            { name: 'Bombers' },
-            { name: 'Vests' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'Footwear',
-      isFeatured: true,
-      children: [
-        { name: 'Sneakers' },
-        { name: 'Formal Shoes' },
-        { name: 'Boots' },
-        { name: 'Sandals' },
-        { name: 'Sports Shoes' }
-      ]
-    },
-    {
-      name: 'Accessories',
-      isFeatured: true,
-      children: [
-        { name: 'Belts' },
-        { name: 'Wallets' },
-        { name: 'Watches' },
-        { name: 'Bags' },
-        { name: 'Caps' }
-      ]
-    }
-  ],
-  kids: [
-    {
-      name: 'Clothing',
-      isFeatured: true,
-      children: [
-        {
-          name: 'Boys',
-          children: [
-            { name: 'T-Shirts' },
-            { name: 'Shirts' },
-            { name: 'Jeans' },
-            { name: 'Shorts' },
-            { name: 'Jackets' }
-          ]
-        },
-        {
-          name: 'Girls',
-          children: [
-            { name: 'T-Shirts' },
-            { name: 'Dresses' },
-            { name: 'Jeans' },
-            { name: 'Skirts' },
-            { name: 'Jackets' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'Footwear',
-      isFeatured: true,
-      children: [
-        { name: 'Sneakers' },
-        { name: 'Sandals' },
-        { name: 'Boots' },
-        { name: 'School Shoes' }
-      ]
-    },
-    {
-      name: 'Accessories',
-      isFeatured: true,
-      children: [
-        { name: 'Bags' },
-        { name: 'Caps' },
-        { name: 'Belts' }
-      ]
-    }
-  ]
-}
+/**
+ * Classic Clothing Category Structure
+ * Structure: Root Categories (Ladies/Gents/Kids) at L0, then subcategories below
+ */
+const CATEGORIES: CategoryDef[] = [
+  {
+    name: 'Ladies',
+    featured: true,
+    children: [
+      {
+        name: 'Tops',
+        featured: true,
+        children: [
+          { name: 'T-Shirts' },
+          { name: 'Blouses' },
+          { name: 'Shirts' },
+          { name: 'Sweaters' },
+          { name: 'Hoodies' },
+          { name: 'Tank Tops' },
+          { name: 'Crop Tops' }
+        ]
+      },
+      {
+        name: 'Bottoms',
+        featured: true,
+        children: [
+          { name: 'Jeans' },
+          { name: 'Trousers' },
+          { name: 'Shorts' },
+          { name: 'Skirts' },
+          { name: 'Leggings' },
+          { name: 'Culottes' }
+        ]
+      },
+      {
+        name: 'Dresses',
+        featured: true,
+        children: [
+          { name: 'Casual Dresses' },
+          { name: 'Evening Dresses' },
+          { name: 'Maxi Dresses' },
+          { name: 'Midi Dresses' },
+          { name: 'Mini Dresses' },
+          { name: 'Shirt Dresses' }
+        ]
+      },
+      {
+        name: 'Outerwear',
+        children: [
+          { name: 'Jackets' },
+          { name: 'Coats' },
+          { name: 'Blazers' },
+          { name: 'Cardigans' },
+          { name: 'Vests' }
+        ]
+      },
+      {
+        name: 'Activewear',
+        children: [
+          { name: 'Sports Bras' },
+          { name: 'Yoga Pants' },
+          { name: 'Track Pants' },
+          { name: 'Athletic Tops' },
+          { name: 'Athletic Shorts' }
+        ]
+      },
+      {
+        name: 'Innerwear',
+        children: [
+          { name: 'Bras' },
+          { name: 'Panties' },
+          { name: 'Shapewear' },
+          { name: 'Camisoles' }
+        ]
+      },
+      {
+        name: 'Sleepwear',
+        children: [
+          { name: 'Pajamas' },
+          { name: 'Nightgowns' },
+          { name: 'Robes' }
+        ]
+      },
+      {
+        name: 'Footwear',
+        featured: true,
+        children: [
+          { name: 'Heels' },
+          { name: 'Flats' },
+          { name: 'Sneakers' },
+          { name: 'Boots' },
+          { name: 'Sandals' },
+          { name: 'Wedges' }
+        ]
+      },
+      {
+        name: 'Accessories',
+        children: [
+          { name: 'Bags & Purses' },
+          { name: 'Jewelry' },
+          { name: 'Scarves' },
+          { name: 'Belts' },
+          { name: 'Hats & Caps' },
+          { name: 'Sunglasses' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Gents',
+    featured: true,
+    children: [
+      {
+        name: 'Tops',
+        featured: true,
+        children: [
+          { name: 'T-Shirts' },
+          { name: 'Shirts' },
+          { name: 'Polo Shirts' },
+          { name: 'Sweaters' },
+          { name: 'Hoodies' },
+          { name: 'Tank Tops' },
+          { name: 'Sweatshirts' }
+        ]
+      },
+      {
+        name: 'Bottoms',
+        featured: true,
+        children: [
+          { name: 'Jeans' },
+          { name: 'Trousers' },
+          { name: 'Chinos' },
+          { name: 'Shorts' },
+          { name: 'Track Pants' },
+          { name: 'Cargo Pants' }
+        ]
+      },
+      {
+        name: 'Formal Wear',
+        featured: true,
+        children: [
+          { name: 'Suits' },
+          { name: 'Dress Shirts' },
+          { name: 'Dress Pants' },
+          { name: 'Blazers' },
+          { name: 'Ties & Bowties' },
+          { name: 'Waistcoats' }
+        ]
+      },
+      {
+        name: 'Outerwear',
+        children: [
+          { name: 'Jackets' },
+          { name: 'Coats' },
+          { name: 'Bomber Jackets' },
+          { name: 'Denim Jackets' },
+          { name: 'Vests' }
+        ]
+      },
+      {
+        name: 'Activewear',
+        children: [
+          { name: 'Track Suits' },
+          { name: 'Sports Shorts' },
+          { name: 'Athletic Tops' },
+          { name: 'Gym Vests' }
+        ]
+      },
+      {
+        name: 'Innerwear',
+        children: [
+          { name: 'Briefs' },
+          { name: 'Boxers' },
+          { name: 'Trunks' },
+          { name: 'Vests' }
+        ]
+      },
+      {
+        name: 'Sleepwear',
+        children: [
+          { name: 'Pajamas' },
+          { name: 'Lounge Pants' },
+          { name: 'Robes' }
+        ]
+      },
+      {
+        name: 'Footwear',
+        featured: true,
+        children: [
+          { name: 'Sneakers' },
+          { name: 'Formal Shoes' },
+          { name: 'Boots' },
+          { name: 'Sandals & Slippers' },
+          { name: 'Sports Shoes' },
+          { name: 'Loafers' }
+        ]
+      },
+      {
+        name: 'Accessories',
+        children: [
+          { name: 'Belts' },
+          { name: 'Wallets' },
+          { name: 'Bags & Backpacks' },
+          { name: 'Caps & Hats' },
+          { name: 'Sunglasses' },
+          { name: 'Watches' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Kids',
+    featured: true,
+    children: [
+      {
+        name: 'Boys',
+        featured: true,
+        children: [
+          {
+            name: 'Tops',
+            children: [
+              { name: 'T-Shirts' },
+              { name: 'Shirts' },
+              { name: 'Hoodies' },
+              { name: 'Sweaters' }
+            ]
+          },
+          {
+            name: 'Bottoms',
+            children: [
+              { name: 'Jeans' },
+              { name: 'Shorts' },
+              { name: 'Track Pants' },
+              { name: 'Trousers' }
+            ]
+          },
+          {
+            name: 'Outerwear',
+            children: [
+              { name: 'Jackets' },
+              { name: 'Coats' }
+            ]
+          }
+        ]
+      },
+      {
+        name: 'Girls',
+        featured: true,
+        children: [
+          {
+            name: 'Tops',
+            children: [
+              { name: 'T-Shirts' },
+              { name: 'Blouses' },
+              { name: 'Hoodies' },
+              { name: 'Sweaters' }
+            ]
+          },
+          {
+            name: 'Bottoms',
+            children: [
+              { name: 'Jeans' },
+              { name: 'Shorts' },
+              { name: 'Skirts' },
+              { name: 'Leggings' }
+            ]
+          },
+          {
+            name: 'Dresses',
+            children: [
+              { name: 'Casual Dresses' },
+              { name: 'Party Dresses' }
+            ]
+          },
+          {
+            name: 'Outerwear',
+            children: [
+              { name: 'Jackets' },
+              { name: 'Coats' }
+            ]
+          }
+        ]
+      },
+      {
+        name: 'Footwear',
+        featured: true,
+        children: [
+          { name: 'Sneakers' },
+          { name: 'Sandals' },
+          { name: 'Boots' },
+          { name: 'School Shoes' },
+          { name: 'Slippers' }
+        ]
+      },
+      {
+        name: 'Accessories',
+        children: [
+          { name: 'Bags & Backpacks' },
+          { name: 'Caps & Hats' },
+          { name: 'Belts' },
+          { name: 'Socks' }
+        ]
+      },
+      {
+        name: 'Sleepwear',
+        children: [
+          { name: 'Pajamas' },
+          { name: 'Nightgowns' },
+          { name: 'Onesies' }
+        ]
+      }
+    ]
+  }
+]
 
-async function createCategoryRecursively(
+/**
+ * Recursively create category and its children
+ */
+async function createCategoryTree(
   session: any,
   hierarchy: 'ladies' | 'gents' | 'kids',
-  definition: CategoryDefinition,
-  parentId: string | null = null
-): Promise<string | null> {
-  const { name, children, isFeatured = false } = definition
-
+  def: CategoryDef,
+  parentId: string | null = null,
+  depth: number = 0
+): Promise<void> {
   try {
-    // Create the category
-    const category = await createCategory(session, name, hierarchy, parentId, isFeatured)
+    // Create this category
+    const category = await createCategory(
+      session,
+      def.name,
+      hierarchy,
+      parentId,
+      def.featured || false
+    )
 
-    const indent = '  '.repeat((category.level || 0) + 1)
-    console.log(`${indent}✓ Created: ${name} (L${category.level})${isFeatured ? ' [Featured]' : ''}`)
+    const indent = '  '.repeat(depth)
+    const featuredMark = def.featured ? ' ⭐' : ''
+    console.log(`${indent}✓ ${def.name} (L${category.level})${featuredMark}`)
 
-    // Recursively create children
-    if (children && children.length > 0) {
-      for (const child of children) {
-        await createCategoryRecursively(session, hierarchy, child, category.id)
+    // Create children recursively
+    if (def.children) {
+      for (const child of def.children) {
+        await createCategoryTree(session, hierarchy, child, category.id, depth + 1)
       }
     }
-
-    return category.id
   } catch (error: any) {
-    // Category might already exist, skip it
-    if (error.message && error.message.includes('already exists')) {
-      console.log(`  ⊗ Skipped (already exists): ${name}`)
-      return null
+    // Skip if already exists
+    if (error.message?.includes('already exists')) {
+      const indent = '  '.repeat(depth)
+      console.log(`${indent}⊗ ${def.name} (already exists)`)
+    } else {
+      throw error
     }
-    throw error
   }
 }
 
-async function setupCategoryHierarchy() {
+/**
+ * Display category tree in console
+ */
+function displayTree(categories: any[], depth: number = 0): void {
+  for (const cat of categories) {
+    const indent = '  '.repeat(depth)
+    const featured = cat.isFeatured ? ' ⭐' : ''
+    const products = cat.productCount ? ` (${cat.productCount} products)` : ''
+    console.log(`${indent}├─ ${cat.name} [L${cat.level}]${featured}${products}`)
+
+    if (cat.children?.length > 0) {
+      displayTree(cat.children, depth + 1)
+    }
+  }
+}
+
+/**
+ * Main setup function
+ */
+async function setupCategories() {
   const session = getSession()
 
   try {
-    console.log('🏗️  Setting up category hierarchy...\n')
+    console.log('\n🏗️  Setting up Classic Clothing Category Hierarchy\n')
+    console.log('═══════════════════════════════════════════════════\n')
 
-    // Create categories for each hierarchy
-    for (const [hierarchy, categories] of Object.entries(CATEGORY_STRUCTURE)) {
-      console.log(`\n📦 Creating ${hierarchy.toUpperCase()} hierarchy:`)
+    // Create each top-level category (Ladies, Gents, Kids)
+    for (const rootCategoryDef of CATEGORIES) {
+      const hierarchy = rootCategoryDef.name.toLowerCase() as 'ladies' | 'gents' | 'kids'
 
-      for (const categoryDef of categories) {
-        await createCategoryRecursively(
-          session,
-          hierarchy as 'ladies' | 'gents' | 'kids',
-          categoryDef
-        )
-      }
+      console.log(`\n📦 ${rootCategoryDef.name.toUpperCase()}:`)
+      console.log('─'.repeat(40))
+
+      await createCategoryTree(
+        session,
+        hierarchy,
+        rootCategoryDef
+      )
     }
 
     // Display final tree
-    console.log('\n\n✅ Category hierarchy setup complete!\n')
-    console.log('📊 Final category tree:\n')
+    console.log('\n\n✅ Category hierarchy created successfully!\n')
+    console.log('═══════════════════════════════════════════════════\n')
+    console.log('📊 Complete Category Structure:\n')
 
     const tree = await getCategoryTree(session)
 
-    for (const hierarchy of ['ladies', 'gents', 'kids']) {
-      const hierarchyTree = tree.filter(cat => cat.hierarchy === hierarchy)
-      if (hierarchyTree.length > 0) {
-        console.log(`\n${hierarchy.toUpperCase()} (${hierarchyTree[0].children?.length || 0} top-level categories)`)
-        displayTree(hierarchyTree, 1)
+    // Display the root categories (Ladies, Gents, Kids) and their children
+    for (const [hierarchy, categories] of Object.entries(tree)) {
+      if (categories.length > 0) {
+        const rootCategory = categories[0]
+        console.log(`\n${hierarchy.toUpperCase()} - ${rootCategory.name} (L${rootCategory.level}) ${rootCategory.isFeatured ? '⭐' : ''}`)
+        if (rootCategory.children?.length > 0) {
+          displayTree(rootCategory.children, 1)
+        }
       }
     }
 
-    console.log('\n✨ Done! You can now:')
-    console.log('   1. View categories in the admin panel at /admin/categories')
-    console.log('   2. Assign products to leaf categories')
-    console.log('   3. See category filters on the homepage\n')
+    console.log('\n\n✨ Next Steps:')
+    console.log('   • View categories at: /admin/categories')
+    console.log('   • Assign products to leaf categories')
+    console.log('   • Categories marked with ⭐ appear in navigation\n')
 
   } catch (error) {
-    console.error('❌ Error setting up category hierarchy:', error)
+    console.error('\n❌ Error setting up categories:', error)
     throw error
   } finally {
     await session.close()
   }
 }
 
-function displayTree(categories: any[], depth: number = 0) {
-  const indent = '  '.repeat(depth)
-
-  for (const cat of categories) {
-    const productInfo = cat.productCount !== undefined ? ` (${cat.productCount} products)` : ''
-    const featuredBadge = cat.isFeatured ? ' ⭐' : ''
-    console.log(`${indent}├─ ${cat.name} [L${cat.level}]${featuredBadge}${productInfo}`)
-
-    if (cat.children && cat.children.length > 0) {
-      displayTree(cat.children, depth + 1)
-    }
-  }
+// Run the script
+if (require.main === module) {
+  setupCategories()
+    .then(() => {
+      console.log('✅ Script completed successfully\n')
+      process.exit(0)
+    })
+    .catch((error) => {
+      console.error('❌ Script failed:', error)
+      process.exit(1)
+    })
 }
 
-// Run the script
-setupCategoryHierarchy()
-  .then(() => {
-    console.log('✅ Script completed successfully')
-    process.exit(0)
-  })
-  .catch((error) => {
-    console.error('❌ Script failed:', error)
-    process.exit(1)
-  })
+export { setupCategories }

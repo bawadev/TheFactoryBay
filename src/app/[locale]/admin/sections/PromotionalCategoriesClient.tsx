@@ -528,9 +528,9 @@ export default function PromotionalCategoriesClient({
                             <div className="flex gap-4">
                               {/* Product Image */}
                               <div className="relative w-24 h-24 bg-gray-100 rounded flex-shrink-0">
-                                {product.variants[0]?.images[0] && (
+                                {product.images?.[0] && (
                                   <Image
-                                    src={product.variants[0].images[0]}
+                                    src={product.images[0]}
                                     alt={product.name}
                                     fill
                                     className="object-cover rounded"
@@ -563,10 +563,10 @@ export default function PromotionalCategoriesClient({
                                 <div className="flex items-center gap-3 mb-2">
                                   <div className="flex items-baseline gap-2">
                                     <span className="text-lg font-bold text-navy-900">
-                                      ${product.stockPrice.toFixed(2)}
+                                      Rs {product.stockPrice.toFixed(2)}
                                     </span>
                                     <span className="text-sm text-gray-500 line-through">
-                                      ${product.retailPrice.toFixed(2)}
+                                      Rs {product.retailPrice.toFixed(2)}
                                     </span>
                                   </div>
                                   <span
@@ -658,9 +658,9 @@ export default function PromotionalCategoriesClient({
                         className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
                       >
                         <div className="relative w-16 h-16 bg-gray-100 rounded flex-shrink-0">
-                          {product.variants[0]?.images[0] && (
+                          {product.images?.[0] && (
                             <Image
-                              src={product.variants[0].images[0]}
+                              src={product.images[0]}
                               alt={product.name}
                               fill
                               className="object-cover rounded"
@@ -816,9 +816,9 @@ export default function PromotionalCategoriesClient({
                   >
                     <div className="flex gap-3 mb-3">
                       <div className="relative w-20 h-20 bg-gray-100 rounded flex-shrink-0">
-                        {product.variants[0]?.images[0] && (
+                        {product.images?.[0] && (
                           <Image
-                            src={product.variants[0].images[0]}
+                            src={product.images[0]}
                             alt={product.name}
                             fill
                             className="object-cover rounded"

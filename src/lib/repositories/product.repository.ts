@@ -282,6 +282,7 @@ export async function createProduct(
       stockPrice: product.stockPrice,
       retailPrice: product.retailPrice,
       sku: product.sku,
+      images: product.images || [], // Product-level images (shared across variants)
       createdAt: now,
       updatedAt: now,
     }
@@ -460,6 +461,55 @@ export async function deleteVariant(variantId: string): Promise<void> {
       DETACH DELETE v
       `,
       { variantId }
+    )
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Add an image to a product
+ */
+export async function addProductImage(productId: string, imageUrl: string): Promise<void> {
+  const session = getSession()
+  try {
+    await session.run(
+      `
+      MATCH (p:Product {id: $productId})
+      SET p.images = CASE
+        WHEN p.images IS NULL THEN [$imageUrl]
+        ELSE p.images + $imageUrl
+      END,
+      p.updatedAt = $updatedAt
+      `,
+      {
+        productId,
+        imageUrl,
+        updatedAt: new Date().toISOString(),
+      }
+    )
+  } finally {
+    await session.close()
+  }
+}
+
+/**
+ * Remove an image from a product
+ */
+export async function removeProductImage(productId: string, imageUrl: string): Promise<void> {
+  const session = getSession()
+  try {
+    await session.run(
+      `
+      MATCH (p:Product {id: $productId})
+      SET p.images = [img IN p.images WHERE img <> $imageUrl],
+          p.updatedAt = $updatedAt
+      `,
+      {
+        productId,
+        imageUrl,
+        updatedAt: new Date().toISOString(),
+      }
     )
   } finally {
     await session.close()

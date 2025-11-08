@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { isAdmin } from '@/lib/auth'
 import { getTranslations, getLocale } from 'next-intl/server'
 import Link from 'next/link'
+import { getProductCount } from '@/lib/repositories/product.repository'
 
 export default async function AdminDashboardPage() {
   const adminAccess = await isAdmin()
@@ -12,6 +13,9 @@ export default async function AdminDashboardPage() {
   }
 
   const t = await getTranslations('admin.dashboard')
+
+  // Fetch actual stats
+  const totalProducts = await getProductCount()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,7 +194,7 @@ export default async function AdminDashboardPage() {
                   />
                 </svg>
               </div>
-              <h2 className="ml-4 text-xl font-semibold text-gray-900">Custom Filters</h2>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Category Management</h2>
             </div>
             <p className="text-sm text-gray-600">
               Define hierarchical filters to organize products by custom categories like &quot;Office Wares&quot; or &quot;Evening Dresses&quot;.
@@ -210,7 +214,7 @@ export default async function AdminDashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <p className="text-sm font-medium text-gray-600">{t('totalProducts')}</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">10</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{totalProducts}</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <p className="text-sm font-medium text-gray-600">{t('pendingOrders')}</p>
@@ -222,7 +226,7 @@ export default async function AdminDashboardPage() {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <p className="text-sm font-medium text-gray-600">{t('totalRevenue')}</p>
-              <p className="mt-2 text-3xl font-bold text-green-600">$-</p>
+              <p className="mt-2 text-3xl font-bold text-green-600">Rs -</p>
             </div>
           </div>
         </div>
