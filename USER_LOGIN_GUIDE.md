@@ -40,6 +40,67 @@ This guide explains how to access Factory Bay including all services, test crede
 
 ---
 
+## Remote/Production Access
+
+### Production Factory Bay Application
+
+Access the live production instance deployed on Dokploy:
+
+| Service | URL | Username/Email | Password | Status |
+|---------|-----|----------------|----------|--------|
+| **Factory Bay Production** | https://renfy.style/en | `testadmin@factorybay.com` | `Admin123!` | ✅ Live |
+| **Admin Dashboard** | https://renfy.style/en/admin/dashboard | Same as above | Same as above | ✅ Live |
+
+**Production URLs:**
+```
+Homepage:        https://renfy.style/en
+Login:           https://renfy.style/en/login
+Admin Panel:     https://renfy.style/en/admin/dashboard
+Shop:            https://renfy.style/en/shop
+```
+
+**Important Notes:**
+- ⚠️ Change the default admin password after first login to production
+- Production database and images are separate from local development
+- Changes made locally need to be deployed via Git push (see DOKPLOY_DEPLOYMENT.md)
+
+### Dokploy Dashboard Access
+
+Access the Dokploy deployment platform to manage the production application:
+
+| Service | URL | Details | Status |
+|---------|-----|---------|--------|
+| **Dokploy Dashboard** | http://62.171.137.117:3000 | Deployment platform | ✅ Accessible |
+
+**Dokploy Features:**
+- Application deployment and management
+- View deployment logs and status
+- Manage environment variables
+- Monitor application health
+- Manual deployment triggers
+- Service configuration (Neo4j, MinIO)
+
+**Access Instructions:**
+1. Navigate to: http://62.171.137.117:3000
+2. Login with Dokploy credentials
+3. Select "Factory Bay" project
+4. Access application settings and deployments
+
+### Production Infrastructure
+
+**Note:** Production Neo4j and MinIO are accessed internally by the application. Direct external access is typically restricted for security.
+
+If you need to access production database or storage:
+1. SSH into the Dokploy server
+2. Use Docker commands to access services
+3. See DOKPLOY_DEPLOYMENT.md for detailed instructions
+
+---
+
+## Local Development Access
+
+The following credentials are for local development only (localhost):
+
 ## Database & Infrastructure Access
 
 ### Neo4j Browser
@@ -330,7 +391,14 @@ cat .env.local
 
 ## Quick Reference
 
-### All Service Credentials
+### Production/Remote Service Credentials
+
+| Service | URL | Username/Email | Password | Status |
+|---------|-----|----------------|----------|--------|
+| **Factory Bay Production** | https://renfy.style/en/login | `testadmin@factorybay.com` | `Admin123!` | ✅ Live |
+| **Dokploy Dashboard** | http://62.171.137.117:3000 | [Your Dokploy email] | [Your Dokploy password] | ✅ Accessible |
+
+### Local Development Service Credentials
 
 | Service | URL | Username/Email | Password | Status |
 |---------|-----|----------------|----------|--------|

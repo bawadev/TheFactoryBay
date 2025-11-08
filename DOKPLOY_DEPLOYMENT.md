@@ -225,14 +225,289 @@ If using a custom domain:
 3. Configure SSL/TLS in Dokploy
 4. Redeploy the application
 
-## 🔄 Updating the Application
+## 🔄 Deploying Changes from Local to Production
 
-When you push new code to GitHub:
+This section covers the complete workflow for deploying code changes from your local development environment to production.
 
-1. Dokploy will automatically detect changes (if auto-deploy is enabled)
-2. Or manually trigger a deployment in Dokploy dashboard
-3. The application will rebuild and restart
-4. Database and MinIO data are preserved
+### Development Workflow
+
+#### Step 1: Make Changes Locally
+
+```bash
+# Start local development environment
+./setup.sh start          # Starts Neo4j, MinIO, and Next.js
+# OR
+npm run dev              # If services already running
+
+# Make your code changes in your editor
+# Test thoroughly in local environment
+```
+
+#### Step 2: Test Your Changes
+
+Before deploying to production, ensure everything works locally:
+
+```bash
+# Run linting
+npm run lint
+
+# Build the application to catch build errors
+npm run build
+
+# Test the production build locally (optional)
+npm start
+```
+
+**Important:** Always test your changes locally before deploying to production.
+
+#### Step 3: Commit Your Changes
+
+```bash
+# Check which files changed
+git status
+
+# Stage your changes
+git add .
+# OR stage specific files
+git add src/app/[locale]/HomePageClient.tsx
+
+# Commit with a descriptive message
+git commit -m "feat: add new product filtering feature"
+# OR for bug fixes
+git commit -m "fix: resolve hero slider navigation issue"
+# OR for refactoring
+git commit -m "refactor: remove navigation arrows from hero section"
+```
+
+**Commit Message Guidelines:**
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `refactor:` - Code restructuring without changing functionality
+- `style:` - UI/styling changes
+- `docs:` - Documentation updates
+- `chore:` - Maintenance tasks
+
+#### Step 4: Push to GitHub
+
+```bash
+# Push to the master branch
+git push origin master
+
+# Verify push was successful
+git status
+```
+
+**Note:** Pushing to GitHub is the trigger for Dokploy deployment.
+
+#### Step 5: Deploy to Production
+
+You have two options for deployment:
+
+**Option A: Automatic Deployment (Recommended)**
+
+If auto-deploy is enabled in Dokploy (default):
+
+1. Dokploy automatically detects the push to GitHub
+2. Deployment starts within 30-60 seconds
+3. You'll see a new deployment appear in Dokploy dashboard
+4. Monitor the deployment progress in the Deployments tab
+
+**Option B: Manual Deployment**
+
+If auto-deploy is disabled or you want manual control:
+
+1. Go to your Dokploy dashboard: `http://YOUR_SERVER_IP:3000`
+2. Navigate to: **Projects** → **Factory Bay** → **Application**
+3. Click the **Deployments** tab
+4. Click the **Deploy** button (top right)
+5. Confirm the deployment
+
+#### Step 6: Monitor Deployment
+
+```bash
+# Watch deployment progress in Dokploy UI:
+# - Click on your application
+# - Go to Deployments tab
+# - Click on the latest deployment to see logs
+
+# OR monitor via SSH:
+ssh root@YOUR_SERVER_IP
+docker logs -f [CONTAINER_NAME]
+```
+
+**Typical Deployment Timeline:**
+- **Build Phase:** 1-3 minutes (Nixpacks builds Next.js app)
+- **Deploy Phase:** 30-60 seconds (Container restart)
+- **Total Time:** ~2-4 minutes for most changes
+
+**Deployment Status Indicators:**
+- 🟡 **Running** - Deployment in progress
+- 🟢 **Done** - Deployment successful
+- 🔴 **Error** - Deployment failed (check logs)
+
+#### Step 7: Verify Production Changes
+
+After deployment completes:
+
+1. **Visit Your Production Site:**
+   ```
+   http://YOUR_DOMAIN
+   # OR
+   http://YOUR_SERVER_IP:3000
+   ```
+
+2. **Test Your Changes:**
+   - Navigate to the pages you modified
+   - Test the functionality you added/changed
+   - Check browser console for any errors
+   - Verify images and assets load correctly
+
+3. **Check Application Logs (if issues occur):**
+   ```bash
+   # In Dokploy dashboard
+   Application → Logs → View Real-time Logs
+
+   # OR via SSH
+   docker logs [CONTAINER_NAME] --tail 100
+   ```
+
+### Common Deployment Scenarios
+
+#### Scenario 1: UI Changes Only
+
+For frontend-only changes (components, styles, client logic):
+
+```bash
+git add src/components/
+git commit -m "style: update hero section design"
+git push origin master
+# Wait for auto-deploy (~2-3 min)
+# Verify changes in browser (hard refresh: Ctrl+Shift+R)
+```
+
+#### Scenario 2: Server Action / API Changes
+
+For backend changes (server actions, repositories, database queries):
+
+```bash
+git add src/app/actions/ src/lib/repositories/
+git commit -m "feat: add product search functionality"
+git push origin master
+# Wait for deployment
+# Test API functionality thoroughly
+```
+
+#### Scenario 3: Database Schema Changes
+
+For changes requiring database updates:
+
+```bash
+# 1. Update schema locally
+git add src/lib/schema.ts src/lib/repositories/
+git commit -m "feat: add promotional categories schema"
+git push origin master
+
+# 2. Wait for deployment to complete
+
+# 3. SSH into server and run migrations
+ssh root@YOUR_SERVER_IP
+docker exec -it [CONTAINER_NAME] npm run db:init
+```
+
+#### Scenario 4: Environment Variable Changes
+
+If you need to update environment variables:
+
+```bash
+# 1. Update code if needed
+git commit -am "feat: add email notification feature"
+git push origin master
+
+# 2. Update environment variables in Dokploy
+# - Go to Application → Settings → Environment
+# - Add/update variables
+# - Click Save
+
+# 3. Redeploy (restart required for env changes)
+# - Click Deploy button in Dokploy
+```
+
+### Rollback Procedure
+
+If a deployment causes issues:
+
+**Option 1: Revert Git Commit**
+
+```bash
+# Revert to previous commit
+git revert HEAD
+git push origin master
+# Auto-deploy will deploy the reverted version
+```
+
+**Option 2: Deploy Previous Version via Dokploy**
+
+1. Go to Deployments tab in Dokploy
+2. Find the last successful deployment
+3. Click **Redeploy** on that deployment
+
+**Option 3: Manual Rollback**
+
+```bash
+# SSH into server
+ssh root@YOUR_SERVER_IP
+
+# Restart container to previous image
+docker ps -a | grep factory-bay
+docker restart [CONTAINER_NAME]
+```
+
+### Deployment Best Practices
+
+1. ✅ **Always test locally first** - Run `npm run build` before pushing
+2. ✅ **Commit frequently** - Small, focused commits are easier to debug
+3. ✅ **Write clear commit messages** - Helps track what changed
+4. ✅ **Monitor deployments** - Don't assume it worked, verify it
+5. ✅ **Test after deployment** - Always verify changes on production
+6. ✅ **Deploy during low-traffic times** - Minimize user impact
+7. ✅ **Keep dependencies updated** - Run `npm update` periodically
+8. ✅ **Backup before major changes** - See backup commands below
+
+### Data Persistence During Deployments
+
+**What is preserved:**
+- ✅ Neo4j database data (users, products, orders)
+- ✅ MinIO uploaded images
+- ✅ Environment variables
+- ✅ Docker volumes
+
+**What is rebuilt:**
+- 🔄 Application code
+- 🔄 Node modules
+- 🔄 Next.js build cache
+- 🔄 Container image
+
+**Important:** User data and uploaded content are never lost during deployments.
+
+### Quick Reference Commands
+
+```bash
+# Complete deployment workflow
+git status                          # Check changes
+npm run lint                        # Verify code quality
+npm run build                       # Test build
+git add .                           # Stage changes
+git commit -m "feat: description"   # Commit
+git push origin master              # Deploy to production
+
+# Check deployment status
+ssh root@YOUR_SERVER_IP
+docker ps | grep factory-bay        # Check if running
+docker logs [CONTAINER_NAME] -f     # Watch logs
+
+# Emergency rollback
+git revert HEAD && git push origin master
+```
 
 ## 🐛 Troubleshooting
 
