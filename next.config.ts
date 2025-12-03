@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
         hostname: 'localhost',
         port: '9000',
       },
+      {
+        protocol: 'http',
+        hostname: '62.171.137.117',
+        port: '9000',
+      },
     ],
   },
   // Increase body size limit for file uploads (default is 1MB)
