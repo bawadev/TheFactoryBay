@@ -1,5 +1,7 @@
 # Factory Bay - Kamal Deployment Config
+# Copy to bawaDev/TheFactoryBay repo as config/deploy.yml
 # Reference: server-credentials.md
+# Uses Traefik (from Appwrite) for reverse proxy and SSL
 
 service: factory-bay
 image: ghcr.io/bawadev/factory-bay
@@ -8,6 +10,17 @@ servers:
   web:
     hosts:
       - 185.211.6.206
+    labels:
+      traefik.enable: "true"
+      traefik.constraint-label-stack: "appwrite"
+      traefik.http.routers.factory-bay.rule: "Host(\`dev.renfy.style\`)"
+      traefik.http.routers.factory-bay.entrypoints: "appwrite_websecure"
+      traefik.http.routers.factory-bay.tls: "true"
+      traefik.http.routers.factory-bay.tls.certresolver: "dns"
+      traefik.http.services.factory-bay.loadbalancer.server.port: "3000"
+      traefik.docker.network: "gateway"
+    options:
+      network: gateway
 
 registry:
   server: ghcr.io
@@ -18,10 +31,8 @@ registry:
 ssh:
   user: root
 
-proxy:
-  ssl: true
-  host: dev.renfy.style
-  app_port: 3000
+# Disable kamal-proxy - using Traefik instead
+proxy: false
 
 env:
   clear:
