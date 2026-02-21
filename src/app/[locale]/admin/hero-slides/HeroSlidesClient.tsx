@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
-import type { HeroSlide, HeroAnimationType } from '@/lib/types'
+import type { HeroSlide, HeroAnimationType, PromotionalCategory } from '@/lib/types'
 import {
   createHeroSlideAction,
   updateHeroSlideAction,
@@ -24,6 +24,7 @@ const ANIMATION_OPTIONS: { value: HeroAnimationType; label: string }[] = [
 
 interface HeroSlidesClientProps {
   initialSlides: HeroSlide[]
+  promotionalCategories: PromotionalCategory[]
 }
 
 type FormData = {
@@ -32,6 +33,7 @@ type FormData = {
   badgeText: string
   title: string
   subtitle: string
+  linkUrl: string
   isActive: boolean
 }
 
@@ -41,16 +43,29 @@ const emptyForm: FormData = {
   badgeText: '',
   title: '',
   subtitle: '',
+  linkUrl: '',
   isActive: true,
 }
 
-export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProps) {
+export default function HeroSlidesClient({ initialSlides, promotionalCategories }: HeroSlidesClientProps) {
   const locale = useLocale()
   const [slides, setSlides] = useState<HeroSlide[]>(initialSlides)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingSlide, setEditingSlide] = useState<HeroSlide | null>(null)
   const [form, setForm] = useState<FormData>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false)
+  const sectionDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sectionDropdownRef.current && !sectionDropdownRef.current.contains(e.target as Node)) {
+        setSectionDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Notification
   const [notification, setNotification] = useState<{
@@ -83,6 +98,7 @@ export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProp
       badgeText: slide.badgeText,
       title: slide.title,
       subtitle: slide.subtitle,
+      linkUrl: slide.linkUrl || '',
       isActive: slide.isActive,
     })
     setIsModalOpen(true)
@@ -106,6 +122,8 @@ export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProp
 
     setSaving(true)
 
+    const sanitizedLinkUrl = form.linkUrl === '__custom__' ? '' : form.linkUrl
+
     try {
       if (editingSlide) {
         // Update existing
@@ -115,6 +133,7 @@ export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProp
           badgeText: form.badgeText,
           title: form.title,
           subtitle: form.subtitle,
+          linkUrl: sanitizedLinkUrl,
           isActive: form.isActive,
         })
 
@@ -140,6 +159,7 @@ export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProp
         const displayOrder = slides.length
         const result = await createHeroSlideAction({
           ...form,
+          linkUrl: sanitizedLinkUrl,
           displayOrder,
         })
 
@@ -447,20 +467,6 @@ export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProp
                   </select>
                 </div>
 
-                {/* Badge Text */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Badge Text
-                  </label>
-                  <input
-                    type="text"
-                    value={form.badgeText}
-                    onChange={(e) => setForm((prev) => ({ ...prev, badgeText: e.target.value }))}
-                    placeholder="e.g. Premium Experience closer to You"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-navy-600 focus:border-transparent text-sm"
-                  />
-                </div>
-
                 {/* Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -487,6 +493,95 @@ export default function HeroSlidesClient({ initialSlides }: HeroSlidesClientProp
                     placeholder="e.g. Branded Clothing at Stock Prices"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-navy-600 focus:border-transparent text-sm"
                   />
+                </div>
+
+                {/* Redirect to Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Redirect to Section
+                  </label>
+                  <div className="relative" ref={sectionDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setSectionDropdownOpen(!sectionDropdownOpen)}
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-left focus:ring-2 focus:ring-navy-600 focus:border-transparent"
+                    >
+                      <span className={form.linkUrl && form.linkUrl !== '__custom__' && promotionalCategories.find((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl) ? 'text-gray-900' : form.linkUrl === '__custom__' || (form.linkUrl && !promotionalCategories.some((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl)) ? 'text-gray-900' : 'text-gray-500'}>
+                        {form.linkUrl === ''
+                          ? 'None (no link)'
+                          : form.linkUrl === '__custom__'
+                          ? 'Custom URL'
+                          : promotionalCategories.find((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl)?.name
+                            || 'Custom URL'}
+                      </span>
+                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${sectionDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {sectionDropdownOpen && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({ ...prev, linkUrl: '' }))
+                            setSectionDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${form.linkUrl === '' ? 'bg-navy-50 text-navy-700 font-medium' : 'text-gray-700'}`}
+                        >
+                          <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                          </svg>
+                          None (no link)
+                        </button>
+                        {promotionalCategories.map((cat) => (
+                          <button
+                            type="button"
+                            key={cat.id}
+                            onClick={() => {
+                              setForm((prev) => ({ ...prev, linkUrl: `/en/shop?promo=${cat.slug}` }))
+                              setSectionDropdownOpen(false)
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${form.linkUrl === `/en/shop?promo=${cat.slug}` ? 'bg-navy-50 text-navy-700 font-medium' : 'text-gray-700'}`}
+                          >
+                            <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            {cat.name}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({ ...prev, linkUrl: '__custom__' }))
+                            setSectionDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100 ${form.linkUrl === '__custom__' || (form.linkUrl && !promotionalCategories.some((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl) && form.linkUrl !== '') ? 'bg-navy-50 text-navy-700 font-medium' : 'text-gray-700'}`}
+                        >
+                          <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          Custom URL
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Select a promotional section to link to, or choose &quot;Custom URL&quot; for a manual link.
+                  </p>
+                  {(form.linkUrl === '__custom__' ||
+                    (form.linkUrl &&
+                      form.linkUrl !== '__custom__' &&
+                      !promotionalCategories.some(
+                        (cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl
+                      ))) && (
+                    <input
+                      type="text"
+                      value={form.linkUrl === '__custom__' ? '' : form.linkUrl}
+                      onChange={(e) => setForm((prev) => ({ ...prev, linkUrl: e.target.value }))}
+                      placeholder="e.g. /en/shop?promo=best-sellers"
+                      className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-navy-600 focus:border-transparent text-sm"
+                    />
+                  )}
                 </div>
 
                 {/* Active checkbox */}
