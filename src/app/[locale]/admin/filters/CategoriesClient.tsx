@@ -141,7 +141,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       }
       await refreshCategories()
     } else {
-      showNotification('error', 'Error', result.error || 'Failed to add product')
+      showNotification('error', 'Error', result.message || 'Failed to add product')
     }
   }
 
@@ -211,7 +211,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       setShowCreateModal(false)
       await refreshCategories()
     } else {
-      showNotification('error', 'Error', result.error || 'Failed to create category')
+      showNotification('error', 'Error', result.message || 'Failed to create category')
     }
   }
 
@@ -222,7 +222,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       setEditingCategory(null)
       await refreshCategories()
     } else {
-      showNotification('error', 'Error', result.error || 'Failed to update category')
+      showNotification('error', 'Error', result.message || 'Failed to update category')
     }
   }
 
@@ -232,7 +232,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       await refreshCategories()
       showNotification('success', 'Success', `Category ${!currentFeatured ? 'marked as featured' : 'removed from featured'}`)
     } else {
-      showNotification('error', 'Error', result.error || 'Failed to update featured status')
+      showNotification('error', 'Error', result.message || 'Failed to update featured status')
     }
   }
 
@@ -248,7 +248,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           showNotification('success', 'Success', 'Category deleted successfully')
           await refreshCategories()
         } else {
-          showNotification('error', 'Error', result.error || 'Failed to delete category')
+          showNotification('error', 'Error', result.message || 'Failed to delete category')
         }
       },
     })

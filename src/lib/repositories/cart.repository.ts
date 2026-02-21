@@ -32,6 +32,10 @@ export async function addToCart(
   variantId: string,
   quantity: number = 1
 ): Promise<CartItem> {
+  if (quantity <= 0) {
+    throw new Error('Quantity must be greater than 0')
+  }
+
   const session = getSession()
   try {
     // Check if item already exists in cart

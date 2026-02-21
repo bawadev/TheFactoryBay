@@ -25,7 +25,12 @@
     "cart": "Cart",
     "signIn": "Sign In",
     "getStarted": "Get Started",
-    "home": "Home"
+    "home": "Home",
+    "stockPrices": "Stock Prices",
+    "admin": "Admin",
+    "adminPanel": "Admin Panel",
+    "menu": "Menu",
+    "signedInAs": "Signed in as"
   },
   "home": {
     "hero": {
@@ -41,6 +46,18 @@
     "newArrivals": "New Arrivals",
     "newArrivalsSubtitle": "Check out our latest products",
     "viewAll": "View All →",
+    "shopByCategory": "Shop by Category",
+    "clearAll": "Clear All",
+    "subcategories": "Subcategories (click to filter)",
+    "filteredProducts": "Filtered Products",
+    "stats": {
+      "savingsValue": "50%+",
+      "savingsLabel": "Average Savings",
+      "productsValue": "1000+",
+      "productsLabel": "Premium Products",
+      "supportValue": "24/7",
+      "supportLabel": "Customer Support"
+    },
     "cta": {
       "title": "Join Factory Bay Today",
       "subtitle": "Get access to exclusive deals, personalized recommendations, and premium branded clothing at wholesale prices.",

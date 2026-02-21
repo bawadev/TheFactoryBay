@@ -1,9 +1,8 @@
 'use server'
 
-import { writeFile } from 'fs/promises'
-import { join } from 'path'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
+import { uploadFile } from '@/lib/minio'
 import { updateOrderPaymentProof } from '@/lib/repositories/order.repository'
 import type { ActionResponse } from '@/lib/types'
 
@@ -69,26 +68,14 @@ export async function uploadPaymentProofAction(
     }
 
     // Create unique filename
-    const timestamp = Date.now()
     const fileExtension = file.name.split('.').pop()
-    const filename = `payment-proof-${orderId}-${timestamp}.${fileExtension}`
+    const filename = `payment-proofs/payment-proof-${orderId}-${Date.now()}.${fileExtension}`
 
-    // Save file to public/uploads/payment-proofs directory
+    // Convert file to buffer and upload to MinIO
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'payment-proofs')
-    const filepath = join(uploadDir, filename)
-
-    // Ensure directory exists
-    const fs = require('fs')
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true })
-    }
-
-    await writeFile(filepath, buffer)
-
-    const proofUrl = `/uploads/payment-proofs/${filename}`
+    const proofUrl = await uploadFile(buffer, filename, file.type)
 
     // Update order with payment proof
     await updateOrderPaymentProof(orderId, userId, proofUrl)

@@ -8,8 +8,8 @@ import { useTranslations, useLocale } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { PromotionalCategory } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
+import ProductCard from '@/components/products/ProductCard'
 import SearchAutocomplete from '@/components/SearchAutocomplete'
-import Badge from '@/components/ui/Badge'
 import {
   getRootCategoriesAction,
   getChildCategoriesWithDescendantCountsAction,
@@ -26,64 +26,6 @@ interface HomePageClientProps {
     category: PromotionalCategory
     products: ProductWithVariants[]
   }>
-}
-
-function ProductCard({ product }: { product: ProductWithVariants }) {
-  const locale = useLocale()
-  const t = useTranslations('common')
-  const firstImage = product.images?.[0]
-  const totalStock = product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
-  const discountPercent = Math.round(
-    ((product.retailPrice - product.stockPrice) / product.retailPrice) * 100
-  )
-
-  return (
-    <Link
-      href={`/${locale}/product/${product.id}`}
-      className="group block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1"
-    >
-      <div className="relative aspect-square bg-gray-100 overflow-hidden">
-        {firstImage ? (
-          <Image
-            src={firstImage}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">
-            <span className="text-sm">No image</span>
-          </div>
-        )}
-        {discountPercent > 0 && (
-          <div className="absolute top-2 right-2">
-            <Badge variant="discount">{discountPercent}% OFF</Badge>
-          </div>
-        )}
-        {totalStock === 0 && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <Badge variant="out-of-stock">{t('outOfStock')}</Badge>
-          </div>
-        )}
-      </div>
-      <div className="p-2 sm:p-3 md:p-4">
-        <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">{product.brand}</p>
-        <h3 className="font-semibold text-gray-900 md:line-clamp-2 mt-1 text-xs sm:text-sm md:text-base break-words">{product.name}</h3>
-        <div className="mt-3 flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-1 min-w-0">
-          <span className="text-sm sm:text-base md:text-lg font-bold text-navy-600 truncate">Rs {product.stockPrice.toFixed(0)}</span>
-          {product.retailPrice > product.stockPrice && (
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through truncate">Rs {product.retailPrice.toFixed(0)}</span>
-          )}
-        </div>
-        {totalStock > 0 && totalStock <= 5 && (
-          <div className="mt-2">
-            <Badge variant="low-stock">Only {totalStock} left</Badge>
-          </div>
-        )}
-      </div>
-    </Link>
-  )
 }
 
 export default function HomePageClient({
@@ -308,14 +250,14 @@ export default function HomePageClient({
       <section className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Shop by Category</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('shopByCategory')}</h3>
             <div className="flex items-center gap-3">
               {selectedCategoryIds.size > 0 && (
                 <button
                   onClick={() => setSelectedCategoryIds(new Set())}
                   className="text-sm text-navy-600 hover:text-navy-700 font-medium"
                 >
-                  Clear All ({selectedCategoryIds.size} selected)
+                  {t('clearAll')} ({selectedCategoryIds.size})
                 </button>
               )}
             </div>
@@ -371,7 +313,7 @@ export default function HomePageClient({
           {expandedCategoryId && childCategories.length > 0 && (
             <div className="mt-4 pl-6 border-l-4 border-navy-300">
               <h4 className="text-sm font-semibold text-gray-600 mb-3">
-                Subcategories (click to filter):
+                {t('subcategories')}:
               </h4>
               <div className="flex flex-wrap gap-2">
                 {childCategories.map((childCategory) => {
@@ -417,7 +359,7 @@ export default function HomePageClient({
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Filtered Products</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('filteredProducts')}</h2>
               <p className="text-sm text-gray-600 mt-1">
                 {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
               </p>
@@ -554,16 +496,16 @@ export default function HomePageClient({
             {/* Features Grid */}
             <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-gold-400 mb-2">50%+</div>
-                <div className="text-sm text-gray-300">Average Savings</div>
+                <div className="text-3xl font-bold text-gold-400 mb-2">{t('stats.savingsValue')}</div>
+                <div className="text-sm text-gray-300">{t('stats.savingsLabel')}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-gold-400 mb-2">1000+</div>
-                <div className="text-sm text-gray-300">Premium Products</div>
+                <div className="text-3xl font-bold text-gold-400 mb-2">{t('stats.productsValue')}</div>
+                <div className="text-sm text-gray-300">{t('stats.productsLabel')}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-gold-400 mb-2">24/7</div>
-                <div className="text-sm text-gray-300">Customer Support</div>
+                <div className="text-3xl font-bold text-gold-400 mb-2">{t('stats.supportValue')}</div>
+                <div className="text-sm text-gray-300">{t('stats.supportLabel')}</div>
               </div>
             </div>
           </div>

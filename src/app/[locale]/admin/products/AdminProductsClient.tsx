@@ -563,7 +563,6 @@ export default function AdminProductsClient({ products: initialProducts }: Admin
         editingProduct={editingProduct}
         isEditing={isEditing}
         allBrands={allBrands}
-        onLoadProduct={loadProductIntoForm}
         onOpenCategoryPicker={() => setShowFormCategoryPicker(true)}
         selectedCategoryIds={formData.categoryIds}
       />

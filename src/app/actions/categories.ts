@@ -1,16 +1,9 @@
 'use server'
 
 import { getSession } from '@/lib/db'
-import { getCurrentUser } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth'
+import { convertNeo4jIntegers } from '@/lib/neo4j-utils'
 import * as categoryRepo from '@/lib/repositories/category.repository'
-
-/**
- * Check if current user is admin
- */
-async function isAdmin(): Promise<boolean> {
-  const user = await getCurrentUser()
-  return user?.role === 'ADMIN'
-}
 
 /**
  * Get all root categories (Ladies, Gents, Kids)
@@ -20,52 +13,12 @@ export async function getRootCategoriesAction() {
   try {
     const categories = await categoryRepo.getRootCategories(session)
     return { success: true, data: categories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching root categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch root categories' }
   } finally {
     await session.close()
   }
-}
-
-/**
- * Convert Neo4j Integer objects to plain numbers recursively
- */
-function convertNeo4jIntegers(obj: any): any {
-  if (obj === null || obj === undefined) return obj
-
-  // Handle Neo4j Integer objects - they have 'low' and 'high' properties
-  if (typeof obj === 'object' && 'low' in obj && 'high' in obj) {
-    // Neo4j Integer objects have a toNumber method or can be constructed from low/high
-    if (typeof obj.toNumber === 'function') {
-      return obj.toNumber()
-    }
-    // Fallback: construct number from low/high (for 32-bit integers, low is sufficient)
-    return obj.low
-  }
-
-  // Handle Neo4j Integer objects that have toNumber but not low/high
-  if (typeof obj === 'object' && typeof obj.toNumber === 'function') {
-    return obj.toNumber()
-  }
-
-  // Handle arrays
-  if (Array.isArray(obj)) {
-    return obj.map(convertNeo4jIntegers)
-  }
-
-  // Handle plain objects (any object that's not an array)
-  if (typeof obj === 'object') {
-    const result: any = {}
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        result[key] = convertNeo4jIntegers(obj[key])
-      }
-    }
-    return result
-  }
-
-  return obj
 }
 
 /**
@@ -78,9 +31,9 @@ export async function getCategoryTreeAction() {
     // Convert Neo4j Integers to plain numbers for Client Components
     const sanitizedTree = convertNeo4jIntegers(tree)
     return { success: true, data: sanitizedTree }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching category tree:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch category tree' }
   } finally {
     await session.close()
   }
@@ -96,9 +49,9 @@ export async function getCategoriesByHierarchyAction(
   try {
     const categories = await categoryRepo.getCategoriesByHierarchy(session, hierarchy)
     return { success: true, data: categories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching categories by hierarchy:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch categories' }
   } finally {
     await session.close()
   }
@@ -112,12 +65,12 @@ export async function getCategoryByIdAction(id: string) {
   try {
     const category = await categoryRepo.getCategoryById(session, id)
     if (!category) {
-      return { success: false, error: 'Category not found' }
+      return { success: false, message: 'Category not found' }
     }
     return { success: true, data: category }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch category' }
   } finally {
     await session.close()
   }
@@ -131,9 +84,9 @@ export async function getChildCategoriesAction(parentId: string) {
   try {
     const categories = await categoryRepo.getChildCategories(session, parentId)
     return { success: true, data: categories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching child categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch child categories' }
   } finally {
     await session.close()
   }
@@ -149,9 +102,9 @@ export async function getChildCategoriesWithDescendantCountsAction(parentId: str
     // Convert Neo4j Integers to plain numbers for Client Components
     const sanitizedCategories = convertNeo4jIntegers(categories)
     return { success: true, data: sanitizedCategories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching child categories with descendant counts:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch child categories' }
   } finally {
     await session.close()
   }
@@ -165,9 +118,9 @@ export async function getFeaturedCategoriesAction() {
   try {
     const categories = await categoryRepo.getFeaturedCategories(session)
     return { success: true, data: categories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching featured categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch featured categories' }
   } finally {
     await session.close()
   }
@@ -181,9 +134,9 @@ export async function getCategoryPathAction(categoryId: string) {
   try {
     const path = await categoryRepo.getCategoryPath(session, categoryId)
     return { success: true, data: path }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching category path:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch category path' }
   } finally {
     await session.close()
   }
@@ -199,8 +152,8 @@ export async function createCategoryAction(
   isFeatured: boolean = false
 ) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
@@ -212,9 +165,9 @@ export async function createCategoryAction(
       isFeatured
     )
     return { success: true, data: category }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -232,16 +185,16 @@ export async function updateCategoryAction(
   }
 ) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     const category = await categoryRepo.updateCategory(session, id, updates)
     return { success: true, data: category }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -252,20 +205,20 @@ export async function updateCategoryAction(
  */
 export async function deleteCategoryAction(id: string) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     const result = await categoryRepo.deleteCategory(session, id)
     // Map 'message' to 'error' for consistency with other actions
     if (!result.success && result.message) {
-      return { success: false, error: result.message }
+      return { success: false, message: result.message }
     }
     return { success: result.success }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -279,16 +232,16 @@ export async function moveCategoryAction(
   newParentId: string | null
 ) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     const category = await categoryRepo.moveCategory(session, categoryId, newParentId)
     return { success: true, data: category }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error moving category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -309,9 +262,9 @@ export async function getProductsByCategoriesAction(
       includeDescendants
     )
     return { success: true, data: productIds }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching products by categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -323,8 +276,6 @@ export async function getProductsByCategoriesAction(
 export async function getFullProductsByCategoriesAction(categoryIds: string[]) {
   const session = getSession()
   try {
-    console.log('🔍 getFullProductsByCategoriesAction called with categoryIds:', categoryIds)
-
     const result = await session.run(
       `UNWIND $categoryIds as categoryId
        MATCH (c:Category {id: categoryId})
@@ -341,13 +292,11 @@ export async function getFullProductsByCategoriesAction(categoryIds: string[]) {
       { categoryIds }
     )
 
-    console.log('📊 Query returned', result.records.length, 'products')
-
     const products = result.records.map(record => record.get('p'))
     return { success: true, data: products }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching full products by categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -358,16 +307,16 @@ export async function getFullProductsByCategoriesAction(categoryIds: string[]) {
  */
 export async function findDuplicateNamesAction() {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     const duplicates = await categoryRepo.findDuplicateNames(session)
     return { success: true, data: duplicates }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error finding duplicate names:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -378,16 +327,16 @@ export async function findDuplicateNamesAction() {
  */
 export async function getCategoryStatisticsAction() {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     const stats = await categoryRepo.getCategoryStatistics(session)
     return { success: true, data: stats }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching category statistics:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -401,9 +350,9 @@ export async function getLeafCategoriesAction() {
   try {
     const categories = await categoryRepo.getLeafCategories(session)
     return { success: true, data: categories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching leaf categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -419,9 +368,9 @@ export async function getLeafCategoriesByHierarchyAction(
   try {
     const categories = await categoryRepo.getLeafCategoriesByHierarchy(session, hierarchy)
     return { success: true, data: categories }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching leaf categories by hierarchy:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -435,9 +384,9 @@ export async function validateLeafCategoryAction(categoryId: string) {
   try {
     const validation = await categoryRepo.validateLeafCategoryForProduct(session, categoryId)
     return { success: true, data: validation }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error validating category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -452,16 +401,16 @@ export async function assignProductToCategoriesAction(
   categoryIds: string[]
 ) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     await categoryRepo.assignProductToCategories(session, productId, categoryIds)
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error assigning product to categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -472,8 +421,8 @@ export async function assignProductToCategoriesAction(
  */
 export async function getCategoryProductsAction(categoryId: string) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
@@ -488,9 +437,9 @@ export async function getCategoryProductsAction(categoryId: string) {
 
     const products = result.records.map(record => convertNeo4jIntegers(record.get('p')))
     return { success: true, data: products }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching category products:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -504,8 +453,8 @@ export async function removeProductFromCategoryAction(
   categoryId: string
 ) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
@@ -515,9 +464,9 @@ export async function removeProductFromCategoryAction(
       { productId, categoryId }
     )
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error removing product from category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -531,15 +480,15 @@ export async function addProductToCategoryAction(
   categoryId: string
 ) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
     // Validate category is a leaf
     const validation = await categoryRepo.validateLeafCategoryForProduct(session, categoryId)
     if (!validation.valid) {
-      return { success: false, error: validation.error }
+      return { success: false, message: validation.error }
     }
 
     // Check if relationship already exists
@@ -550,7 +499,7 @@ export async function addProductToCategoryAction(
     )
 
     if (existingResult.records.length > 0) {
-      return { success: false, error: 'Product is already assigned to this category' }
+      return { success: false, message: 'Product is already assigned to this category' }
     }
 
     // Create relationship
@@ -562,9 +511,9 @@ export async function addProductToCategoryAction(
     )
 
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error adding product to category:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -575,8 +524,8 @@ export async function addProductToCategoryAction(
  */
 export async function getUnassignedProductsAction(categoryId: string) {
   if (!(await isAdmin())) {
-    return { success: false, error: 'Unauthorized' }
-  }
+    return { success: false, message: 'Unauthorized' }
+}
 
   const session = getSession()
   try {
@@ -595,9 +544,9 @@ export async function getUnassignedProductsAction(categoryId: string) {
 
     const products = result.records.map(record => convertNeo4jIntegers(record.get('p')))
     return { success: true, data: products }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching unassigned products:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }
@@ -611,9 +560,9 @@ export async function getCategoriesForProductAction(productId: string) {
   try {
     const categoryIds = await categoryRepo.getCategoriesForProduct(session, productId)
     return { success: true, data: categoryIds }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching product categories:', error)
-    return { success: false, error: error.message }
+    return { success: false, message: error instanceof Error ? error.message : 'Operation failed' }
   } finally {
     await session.close()
   }

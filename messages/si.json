@@ -25,7 +25,12 @@
     "cart": "කරත්තය",
     "signIn": "පුරනය වන්න",
     "getStarted": "ආරම්භ කරන්න",
-    "home": "මුල් පිටුව"
+    "home": "මුල් පිටුව",
+    "stockPrices": "තොග මිල",
+    "admin": "පරිපාලක",
+    "adminPanel": "පරිපාලක පැනලය",
+    "menu": "මෙනුව",
+    "signedInAs": "ලෙස පිවිසී ඇත"
   },
   "home": {
     "hero": {
@@ -41,6 +46,18 @@
     "newArrivals": "නව පැමිණීම්",
     "newArrivalsSubtitle": "අපගේ නවතම නිෂ්පාදන බලන්න",
     "viewAll": "සියල්ල බලන්න →",
+    "shopByCategory": "කාණ්ඩය අනුව සාප්පු සවාරි",
+    "clearAll": "සියල්ල ඉවත් කරන්න",
+    "subcategories": "උප කාණ්ඩ (පෙරීමට ක්ලික් කරන්න)",
+    "filteredProducts": "පෙරන ලද නිෂ්පාදන",
+    "stats": {
+      "savingsValue": "50%+",
+      "savingsLabel": "සාමාන්‍ය ඉතිරි කිරීම්",
+      "productsValue": "1000+",
+      "productsLabel": "වාරික නිෂ්පාදන",
+      "supportValue": "24/7",
+      "supportLabel": "පාරිභෝගික සහාය"
+    },
     "cta": {
       "title": "අදම ෆැක්ටරි බේ සමඟ එකතු වන්න",
       "subtitle": "තොග මිලට සුවිශේෂී ගනුදෙනු, පුද්ගලාරෝපිත නිර්දේශ සහ වාරික සන්නාම ඇඳුම් සඳහා ප්‍රවේශය ලබා ගන්න.",

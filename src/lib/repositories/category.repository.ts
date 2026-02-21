@@ -20,36 +20,9 @@
  *   - Boys (L1)
  */
 
-import { Session, Integer } from 'neo4j-driver'
+import { Session } from 'neo4j-driver'
 import { v4 as uuidv4 } from 'uuid'
-
-/**
- * Convert Neo4j Integer objects to regular JavaScript numbers
- * Uses JSON serialization to force conversion of all nested objects
- */
-function convertNeo4jIntegers(obj: any): any {
-  if (obj === null || obj === undefined) return obj
-
-  // Use JSON.parse(JSON.stringify()) to force conversion
-  // This handles all nested Neo4j types automatically
-  try {
-    return JSON.parse(JSON.stringify(obj, (key, value) => {
-      // Handle Neo4j Integer objects - they have low/high properties
-      if (value !== null && typeof value === 'object' && 'low' in value && 'high' in value) {
-        // For 32-bit integers, low property contains the value
-        return value.low
-      }
-      // Handle Neo4j Integer class check
-      if (Integer.isInteger(value)) {
-        return value.toNumber()
-      }
-      return value
-    }))
-  } catch (error) {
-    console.error('Error converting Neo4j integers:', error)
-    return obj
-  }
-}
+import { convertNeo4jIntegers } from '../neo4j-utils'
 
 export interface Category {
   id: string
@@ -86,7 +59,7 @@ export async function createCategory(
   const id = uuidv4()
   // Slug is not unique - same names can appear in different hierarchies
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-  const now = Date.now()
+  const now = new Date().toISOString()
 
   let level = 0
 
@@ -306,7 +279,7 @@ export async function updateCategory(
   }
 ): Promise<Category> {
   const setters: string[] = []
-  const params: any = { id, updatedAt: Date.now() }
+  const params: Record<string, unknown> = { id, updatedAt: new Date().toISOString() }
 
   if (updates.name !== undefined) {
     setters.push('c.name = $name')
@@ -456,7 +429,7 @@ export async function moveCategory(
      DELETE r
      SET c.parentId = $newParentId, c.level = $newLevel, c.updatedAt = $updatedAt
      ${newParentId ? 'WITH c MATCH (parent:Category {id: $newParentId}) CREATE (c)-[:CHILD_OF]->(parent)' : ''}`,
-    { categoryId, newParentId, newLevel, updatedAt: Date.now() }
+    { categoryId, newParentId, newLevel, updatedAt: new Date().toISOString() }
   )
 
   // Recursively update descendant levels
@@ -484,7 +457,7 @@ async function recalculateDescendantLevels(
      MATCH (child:Category)-[:CHILD_OF]->(parent)
      SET child.level = parent.level + 1, child.updatedAt = $updatedAt
      RETURN child.id as childId`,
-    { parentId, updatedAt: Date.now() }
+    { parentId, updatedAt: new Date().toISOString() }
   )
 
   // Recursively update each child's descendants

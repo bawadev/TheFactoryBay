@@ -8,6 +8,7 @@ import type { Category } from '@/lib/repositories/category.repository'
 import { getCategoryByIdAction } from '@/app/actions/categories'
 import { addProductImageAction, removeProductImageAction } from '@/app/actions/admin-products'
 import { uploadMultipleImages, deleteImage } from '@/app/actions/upload'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface ProductFormDialogProps {
   isOpen: boolean
@@ -16,7 +17,6 @@ interface ProductFormDialogProps {
   editingProduct: ProductWithVariants | null
   isEditing: boolean
   allBrands: string[]
-  onLoadProduct: (product: ProductWithVariants) => void | Promise<void>
   onOpenCategoryPicker: () => void
   selectedCategoryIds: string[]
 }
@@ -50,7 +50,6 @@ export default function ProductFormDialog({
   editingProduct,
   isEditing,
   allBrands,
-  onLoadProduct,
   onOpenCategoryPicker,
   selectedCategoryIds,
 }: ProductFormDialogProps) {
@@ -87,10 +86,19 @@ export default function ProductFormDialog({
   // Image management
   const [productImages, setProductImages] = useState<string[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file')
   const [urlInput, setUrlInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
 
   // Load categories when categoryIds change
   useEffect(() => {
@@ -197,6 +205,7 @@ export default function ProductFormDialog({
     if (!files || files.length === 0) return
 
     setUploadingImages(true)
+    setUploadError(null)
 
     try {
       const formData = new FormData()
@@ -216,29 +225,34 @@ export default function ProductFormDialog({
 
         // Update local state
         setProductImages([...productImages, ...uploadResult.urls])
+      } else {
+        setUploadError('Failed to upload images. Please try again.')
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload images. Please try again.')
     } finally {
       setUploadingImages(false)
     }
   }
 
-  const handleImageRemove = async (imageUrl: string) => {
-    if (!confirm('Are you sure you want to remove this image?')) return
-
-    try {
-      // If editing, remove from product in database
-      if (isEditing && editingProduct) {
-        await removeProductImageAction(editingProduct.id, imageUrl)
-        await deleteImage(imageUrl)
-      }
-
-      // Update local state
-      setProductImages(productImages.filter((img) => img !== imageUrl))
-    } catch (error) {
-      console.error('Remove error:', error)
-    }
+  const handleImageRemove = (imageUrl: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Image',
+      message: 'Are you sure you want to remove this image?',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }))
+        try {
+          if (isEditing && editingProduct) {
+            await removeProductImageAction(editingProduct.id, imageUrl)
+            await deleteImage(imageUrl)
+          }
+          setProductImages(productImages.filter((img) => img !== imageUrl))
+        } catch (error) {
+          setUploadError(error instanceof Error ? error.message : 'Failed to remove image.')
+        }
+      },
+    })
   }
 
   const handleUrlSubmit = async () => {
@@ -284,9 +298,15 @@ export default function ProductFormDialog({
   }
 
   const handleDeleteVariant = (index: number) => {
-    if (confirm('Are you sure you want to delete this variant?')) {
-      setVariants(variants.filter((_, i) => i !== index))
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Variant',
+      message: 'Are you sure you want to delete this variant?',
+      onConfirm: () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }))
+        setVariants(variants.filter((_, i) => i !== index))
+      },
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -318,6 +338,7 @@ export default function ProductFormDialog({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close dialog"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -521,6 +542,22 @@ export default function ProductFormDialog({
             <p className="text-xs text-gray-500 mb-3">
               Images are shared across all product variants. Upload up to 5 images.
             </p>
+
+            {/* Upload Error */}
+            {uploadError && (
+              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+                <p className="text-xs text-red-700">{uploadError}</p>
+                <button
+                  type="button"
+                  onClick={() => setUploadError(null)}
+                  className="text-red-400 hover:text-red-600 ml-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             {/* Current Images */}
             {productImages.length > 0 && (
@@ -858,6 +895,15 @@ export default function ProductFormDialog({
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        type="warning"
+      />
     </div>
   )
 }

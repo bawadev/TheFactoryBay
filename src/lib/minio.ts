@@ -50,7 +50,6 @@ async function convertToWebP(buffer: Buffer, contentType: string): Promise<Buffe
       .webp({ quality: 85, effort: 6 }) // High quality with good compression
       .toBuffer()
 
-    console.log(`✅ Image converted to WebP (reduced from ${buffer.length} to ${webpBuffer.length} bytes)`)
     return webpBuffer
   } catch (error) {
     console.error('❌ Error converting to WebP, using original:', error)
@@ -69,7 +68,6 @@ export async function initializeBucket(): Promise<void> {
 
     if (!exists) {
       await client.makeBucket(bucketName, 'us-east-1')
-      console.log(`✅ MinIO bucket '${bucketName}' created`)
 
       // Set bucket policy to allow public read access
       const policy = {
@@ -85,9 +83,7 @@ export async function initializeBucket(): Promise<void> {
       }
 
       await client.setBucketPolicy(bucketName, JSON.stringify(policy))
-      console.log(`✅ MinIO bucket '${bucketName}' policy set to public read`)
     } else {
-      console.log(`✅ MinIO bucket '${bucketName}' already exists`)
     }
   } catch (error) {
     console.error('❌ Error initializing MinIO bucket:', error)
@@ -138,7 +134,6 @@ export async function uploadFile(
     // Construct and return public URL
     const publicUrl = `${process.env.NEXT_PUBLIC_MINIO_URL}/${bucketName}/${uniqueFileName}`
 
-    console.log(`✅ File uploaded: ${uniqueFileName}`)
     return publicUrl
   } catch (error) {
     console.error('❌ Error uploading file:', error)
@@ -177,7 +172,6 @@ export async function deleteFile(fileUrl: string): Promise<void> {
     }
 
     await client.removeObject(bucketName, fileName)
-    console.log(`✅ File deleted: ${fileName}`)
   } catch (error) {
     console.error('❌ Error deleting file:', error)
     throw error
@@ -197,7 +191,6 @@ export async function deleteMultipleFiles(fileUrls: string[]): Promise<void> {
       .filter((name): name is string => name !== undefined)
 
     await client.removeObjects(bucketName, fileNames)
-    console.log(`✅ ${fileNames.length} files deleted`)
   } catch (error) {
     console.error('❌ Error deleting files:', error)
     throw error

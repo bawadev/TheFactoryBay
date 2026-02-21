@@ -48,7 +48,7 @@ export default function CategoriesClient() {
   async function loadCategories() {
     setLoading(true)
     const result = await getCategoryTreeAction()
-    if (result.success) {
+    if (result.success && result.data) {
       setCategoryTree(result.data)
     } else {
       toast.error('Failed to load categories')
@@ -93,7 +93,7 @@ export default function CategoriesClient() {
       setIsFeatured(false)
       loadCategories()
     } else {
-      toast.error(result.error || 'Failed to create category')
+      toast.error(result.message || 'Failed to create category')
     }
   }
 
@@ -104,7 +104,7 @@ export default function CategoriesClient() {
       setEditingCategory(null)
       loadCategories()
     } else {
-      toast.error(result.error || 'Failed to update category')
+      toast.error(result.message || 'Failed to update category')
     }
   }
 
@@ -118,7 +118,7 @@ export default function CategoriesClient() {
       )
       loadCategories()
     } else {
-      toast.error(result.error || 'Failed to update category')
+      toast.error(result.message || 'Failed to update category')
     }
   }
 
@@ -130,7 +130,7 @@ export default function CategoriesClient() {
       toast.success(currentStatus ? 'Category deactivated' : 'Category activated')
       loadCategories()
     } else {
-      toast.error(result.error || 'Failed to update category')
+      toast.error(result.message || 'Failed to update category')
     }
   }
 
@@ -147,8 +147,7 @@ export default function CategoriesClient() {
           toast.success('Category deleted')
           loadCategories()
         } else {
-          const errorMsg = 'message' in result ? result.message : ('error' in result ? result.error : undefined)
-          toast.error(errorMsg || 'Failed to delete category')
+          toast.error(result.message || 'Failed to delete category')
         }
       }
     })

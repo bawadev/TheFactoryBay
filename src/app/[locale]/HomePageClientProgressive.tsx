@@ -108,7 +108,7 @@ export default function HomePageClientProgressive({
 
   async function loadCategories() {
     const result = await getCategoryTreeAction()
-    if (result.success) {
+    if (result.success && result.data) {
       // Recursively flatten the tree structure into a single array
       const flattenCategory = (cat: any): Category[] => {
         const { children, ...categoryData } = cat

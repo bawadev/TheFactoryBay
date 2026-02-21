@@ -16,6 +16,46 @@ export interface ProductWithVariants extends Product {
 }
 
 /**
+ * Build filter conditions and params from ProductFilters
+ */
+function buildProductFilterQuery(filters?: ProductFilters): { conditions: string[]; params: Record<string, unknown> } {
+  const params: Record<string, unknown> = {}
+  const conditions: string[] = []
+
+  if (filters?.category) {
+    conditions.push('p.category = $category')
+    params.category = filters.category
+  }
+
+  if (filters?.brand) {
+    conditions.push('p.brand = $brand')
+    params.brand = filters.brand
+  }
+
+  if (filters?.gender) {
+    conditions.push('p.gender = $gender')
+    params.gender = filters.gender
+  }
+
+  if (filters?.minPrice !== undefined) {
+    conditions.push('p.stockPrice >= $minPrice')
+    params.minPrice = filters.minPrice
+  }
+
+  if (filters?.maxPrice !== undefined) {
+    conditions.push('p.stockPrice <= $maxPrice')
+    params.maxPrice = filters.maxPrice
+  }
+
+  if (filters?.search) {
+    conditions.push('(toLower(p.name) CONTAINS toLower($search) OR toLower(p.brand) CONTAINS toLower($search))')
+    params.search = filters.search
+  }
+
+  return { conditions, params }
+}
+
+/**
  * Get all products with optional filtering
  */
 export async function getAllProducts(
@@ -24,39 +64,10 @@ export async function getAllProducts(
 ): Promise<ProductWithVariants[]> {
   const session = getSession()
   try {
+    const { conditions, params } = buildProductFilterQuery(filters)
+    params.limit = neo4j.int(limit)
+
     let query = 'MATCH (p:Product)'
-    const params: Record<string, any> = { limit: neo4j.int(limit) }
-    const conditions: string[] = []
-
-    if (filters?.category) {
-      conditions.push('p.category = $category')
-      params.category = filters.category
-    }
-
-    if (filters?.brand) {
-      conditions.push('p.brand = $brand')
-      params.brand = filters.brand
-    }
-
-    if (filters?.gender) {
-      conditions.push('p.gender = $gender')
-      params.gender = filters.gender
-    }
-
-    if (filters?.minPrice !== undefined) {
-      conditions.push('p.stockPrice >= $minPrice')
-      params.minPrice = filters.minPrice
-    }
-
-    if (filters?.maxPrice !== undefined) {
-      conditions.push('p.stockPrice <= $maxPrice')
-      params.maxPrice = filters.maxPrice
-    }
-
-    if (filters?.search) {
-      conditions.push('(toLower(p.name) CONTAINS toLower($search) OR toLower(p.brand) CONTAINS toLower($search))')
-      params.search = filters.search
-    }
 
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ')
@@ -209,24 +220,9 @@ export async function getVariantWithProduct(variantId: string): Promise<{
 export async function getProductCount(filters?: ProductFilters): Promise<number> {
   const session = getSession()
   try {
+    const { conditions, params } = buildProductFilterQuery(filters)
+
     let query = 'MATCH (p:Product)'
-    const params: Record<string, any> = {}
-    const conditions: string[] = []
-
-    if (filters?.category) {
-      conditions.push('p.category = $category')
-      params.category = filters.category
-    }
-
-    if (filters?.brand) {
-      conditions.push('p.brand = $brand')
-      params.brand = filters.brand
-    }
-
-    if (filters?.gender) {
-      conditions.push('p.gender = $gender')
-      params.gender = filters.gender
-    }
 
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ')
@@ -268,6 +264,16 @@ export async function createProduct(
   product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>,
   variants: Omit<ProductVariant, 'id' | 'productId'>[]
 ): Promise<ProductWithVariants> {
+  if (variants.length === 0) {
+    throw new Error('At least one variant is required')
+  }
+  if (product.stockPrice <= 0) {
+    throw new Error('Stock price must be greater than 0')
+  }
+  if (product.retailPrice <= 0) {
+    throw new Error('Retail price must be greater than 0')
+  }
+
   const session = getSession()
   try {
     const productId = crypto.randomUUID()

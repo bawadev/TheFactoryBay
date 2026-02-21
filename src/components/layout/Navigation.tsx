@@ -80,8 +80,8 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-navy-900 group-hover:text-navy-600 transition-colors">Factory Bay</span>
-                <span className="text-[10px] text-gold-600 font-semibold uppercase tracking-wider">Stock Prices</span>
+                <span className="text-xl font-bold text-navy-900 group-hover:text-navy-600 transition-colors">{tCommon('appName')}</span>
+                <span className="text-[10px] text-gold-600 font-semibold uppercase tracking-wider">{t('stockPrices')}</span>
               </div>
             </Link>
 
@@ -115,7 +115,7 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Admin
+                    {t('admin')}
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-navy-700/0 via-white/10 to-navy-700/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                 </Link>
@@ -275,7 +275,7 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
                   className="object-contain"
                 />
               </div>
-              <span className="text-lg font-bold text-navy-900">Menu</span>
+              <span className="text-lg font-bold text-navy-900">{t('menu')}</span>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
@@ -324,7 +324,7 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Admin Panel
+                    {t('adminPanel')}
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-navy-700/0 via-white/10 to-navy-700/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                 </Link>
@@ -351,7 +351,7 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
 
                   {/* User Email - Glass Card */}
                   <div className="mx-2 my-2 px-4 py-3 rounded-xl bg-gradient-to-r from-navy-50/50 to-gray-50/50 backdrop-blur-sm border border-gray-200/50">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Signed in as</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t('signedInAs')}</p>
                     <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
                   </div>
 

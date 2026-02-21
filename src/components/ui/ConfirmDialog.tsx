@@ -48,7 +48,7 @@ export default function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-scale-in">
+      <div role="alertdialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message" className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-scale-in">
         {/* Icon */}
         <div className={`${style.iconBg} rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4`}>
           <svg
@@ -67,12 +67,12 @@ export default function ConfirmDialog({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-gray-900 text-center mb-2">
           {title}
         </h3>
 
         {/* Message */}
-        <p className="text-sm text-gray-600 text-center mb-6">
+        <p id="confirm-dialog-message" className="text-sm text-gray-600 text-center mb-6">
           {message}
         </p>
 

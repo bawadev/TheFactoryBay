@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
+import { getColorHex } from '@/lib/color-utils'
 
 interface ProductCardProps {
   product: ProductWithVariants
@@ -11,6 +12,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const locale = useLocale()
+  const t = useTranslations('product')
 
   // Get first variant for display image and check stock
   const firstVariant = product.variants[0]
@@ -37,7 +39,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-gray-400">
-              No Image
+              {t('noImage')}
             </div>
           )}
 
@@ -102,22 +104,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   <div
                     key={index}
                     className="h-4 w-4 rounded-full border border-gray-300"
-                    style={{
-                      backgroundColor:
-                        color.toLowerCase() === 'white'
-                          ? '#ffffff'
-                          : color.toLowerCase() === 'black'
-                          ? '#000000'
-                          : color.toLowerCase() === 'navy'
-                          ? '#1e40af'
-                          : color.toLowerCase() === 'khaki'
-                          ? '#c3b091'
-                          : color.toLowerCase() === 'brown'
-                          ? '#8b4513'
-                          : color.toLowerCase() === 'cream'
-                          ? '#fffdd0'
-                          : '#e5e7eb',
-                    }}
+                    style={{ backgroundColor: getColorHex(color) }}
                     title={color}
                   />
                 ))}

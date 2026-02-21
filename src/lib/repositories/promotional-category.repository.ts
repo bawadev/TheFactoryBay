@@ -39,8 +39,8 @@ export async function createPromotionalCategory(
       isActive: $isActive,
       startDate: $startDate,
       endDate: $endDate,
-      createdAt: datetime().epochMillis,
-      updatedAt: datetime().epochMillis
+      createdAt: $now,
+      updatedAt: $now
     })
     RETURN c
     `,
@@ -52,6 +52,7 @@ export async function createPromotionalCategory(
       isActive: data.isActive ?? true,
       startDate: data.startDate || null,
       endDate: data.endDate || null,
+      now: new Date().toISOString(),
     }
   )
 
@@ -193,7 +194,8 @@ export async function updatePromotionalCategory(
 
   if (updates.length === 0) return null
 
-  updates.push('c.updatedAt = datetime().epochMillis')
+  updates.push('c.updatedAt = $updatedAt')
+  params.updatedAt = new Date().toISOString()
 
   const result = await session.run(
     `
@@ -259,12 +261,12 @@ export async function addProductToCategory(
       r.id = randomUUID(),
       r.allocatedQuantity = $allocatedQuantity,
       r.soldQuantity = 0,
-      r.addedAt = datetime().epochMillis
+      r.addedAt = $now
     ON MATCH SET
       r.allocatedQuantity = $allocatedQuantity
     RETURN r
     `,
-    { categoryId, productId, allocatedQuantity }
+    { categoryId, productId, allocatedQuantity, now: new Date().toISOString() }
   )
 
   const item = result.records[0].get('r').properties
@@ -518,7 +520,7 @@ export async function moveQuantityBetweenCategories(
       rTo.allocatedQuantity = rTo.allocatedQuantity + $quantity
     RETURN count(rFrom) as moved
     `,
-    { productId, fromCategoryId, toCategoryId, quantity }
+    { productId, fromCategoryId, toCategoryId, quantity, now: new Date().toISOString() }
   )
 
   return result.records[0].get('moved') > 0

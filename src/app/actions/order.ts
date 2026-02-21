@@ -1,7 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { verifyToken } from '@/lib/auth'
+import { getCurrentUserId, isAdmin } from '@/lib/auth'
 import {
   createOrder,
   getOrderById,
@@ -12,32 +11,7 @@ import {
   type CreateOrderInput,
 } from '@/lib/repositories/order.repository'
 import { getCartItems, clearCart } from '@/lib/repositories/cart.repository'
-import type { OrderStatus, ShippingAddress, DeliveryMethod } from '@/lib/types'
-
-interface ActionResponse<T = void> {
-  success: boolean
-  message?: string
-  data?: T
-}
-
-/**
- * Get current user ID from JWT token
- */
-async function getCurrentUserId(): Promise<string | null> {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('auth_token')
-
-  if (!token) {
-    return null
-  }
-
-  try {
-    const payload = await verifyToken(token.value)
-    return payload?.userId || null
-  } catch {
-    return null
-  }
-}
+import type { OrderStatus, ShippingAddress, DeliveryMethod, ActionResponse } from '@/lib/types'
 
 /**
  * Create order from current cart
@@ -207,7 +181,13 @@ export async function updateOrderStatusAction(
       }
     }
 
-    // TODO: Check if user is admin
+    const adminAccess = await isAdmin()
+    if (!adminAccess) {
+      return {
+        success: false,
+        message: 'Unauthorized: Admin access required',
+      }
+    }
 
     await updateOrderStatus(orderId, status)
 

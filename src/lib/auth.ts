@@ -3,7 +3,15 @@ import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import type { JWTPayload, User } from './types'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-this'
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production')
+  }
+  return secret || 'default-secret-change-this'
+}
+
+const JWT_SECRET = getJwtSecret()
 const TOKEN_NAME = 'auth_token'
 const SALT_ROUNDS = 12
 
@@ -101,22 +109,19 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 /**
+ * Get current user ID from JWT token
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+  const user = await getCurrentUser()
+  return user?.userId || null
+}
+
+/**
  * Validate email format
  */
 export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
-}
-
-/**
- * Validate password strength
- * Requirements: min 8 chars, 1 uppercase, 1 number
- */
-export function isValidPassword(password: string): boolean {
-  if (password.length < 8) return false
-  if (!/[A-Z]/.test(password)) return false
-  if (!/[0-9]/.test(password)) return false
-  return true
 }
 
 /**

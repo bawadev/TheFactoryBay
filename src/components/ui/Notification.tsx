@@ -12,6 +12,7 @@ interface NotificationProps {
   onClose: () => void
   autoClose?: boolean
   autoCloseDelay?: number
+  okLabel?: string
 }
 
 export default function Notification({
@@ -22,6 +23,7 @@ export default function Notification({
   onClose,
   autoClose = false,
   autoCloseDelay = 3000,
+  okLabel = 'OK',
 }: NotificationProps) {
   useEffect(() => {
     if (isOpen && autoClose) {
@@ -85,7 +87,7 @@ export default function Notification({
 
       {/* Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className={`${style.bg} ${style.border} border-2 rounded-xl shadow-2xl w-full max-w-md transform transition-all`}>
+        <div role="alert" aria-live="assertive" className={`${style.bg} ${style.border} border-2 rounded-xl shadow-2xl w-full max-w-md transform transition-all`}>
           {/* Header with Icon */}
           <div className="flex items-start gap-4 p-6 pb-4">
             <div className={`flex-shrink-0 w-12 h-12 rounded-full ${style.bg} flex items-center justify-center`}>
@@ -122,7 +124,7 @@ export default function Notification({
               onClick={onClose}
               className={`w-full ${style.button} text-white font-semibold py-2.5 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2`}
             >
-              OK
+              {okLabel}
             </button>
           </div>
         </div>

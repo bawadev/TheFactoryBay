@@ -35,6 +35,13 @@ export interface CreateOrderInput {
  * Create a new order
  */
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
+  if (input.items.length === 0) {
+    throw new Error('Order must contain at least one item')
+  }
+  if (input.totalAmount <= 0) {
+    throw new Error('Total amount must be greater than 0')
+  }
+
   const session = getSession()
   try {
     const orderId = uuidv4()

@@ -1,7 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { verifyToken } from '@/lib/auth'
+import { getCurrentUserId } from '@/lib/auth'
 import {
   addToCart,
   removeFromCart,
@@ -21,31 +20,7 @@ import {
   getGuestCartCount,
 } from '@/lib/guest-cart'
 import { getVariantWithProduct } from '@/lib/repositories/product.repository'
-
-interface ActionResponse<T = void> {
-  success: boolean
-  message?: string
-  data?: T
-}
-
-/**
- * Get current user ID from JWT token
- */
-async function getCurrentUserId(): Promise<string | null> {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('auth_token')
-
-  if (!token) {
-    return null
-  }
-
-  try {
-    const payload = await verifyToken(token.value)
-    return payload?.userId || null
-  } catch {
-    return null
-  }
-}
+import type { ActionResponse } from '@/lib/types'
 
 /**
  * Get guest cart items with full details
