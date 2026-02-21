@@ -1,0 +1,88 @@
+'use client'
+
+import { motion, useReducedMotion } from 'framer-motion'
+import type { HeroSlideProps } from '../heroAnimationConfig'
+import {
+  topLeftRoundVariants,
+  topLeftRoundChildVariants,
+  topLeftRoundStagger,
+  reducedMotionVariants,
+} from '../heroAnimationConfig'
+
+export default function SlideTopLeftRound({ badge, title, subtitle, onSearchClick }: HeroSlideProps) {
+  const shouldReduce = useReducedMotion()
+  const variants = shouldReduce ? reducedMotionVariants : topLeftRoundVariants
+
+  return (
+    <motion.div
+      variants={variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="absolute top-4 sm:top-8 md:top-12 left-4 sm:left-8 md:left-12 flex items-center justify-center
+        w-[85vw] h-[70vw] rounded-3xl
+        sm:w-[55vw] sm:h-[55vw]
+        md:w-[40vw] md:h-[40vw] md:rounded-full md:max-w-[500px] md:max-h-[500px]"
+      style={{
+        background:
+          'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 60%, transparent 100%)',
+        backdropFilter: shouldReduce ? 'blur(8px)' : 'blur(16px)',
+        WebkitBackdropFilter: shouldReduce ? 'blur(8px)' : 'blur(16px)',
+        border: '1px solid rgba(255,255,255,0.15)',
+      }}
+    >
+      <motion.div
+        className="px-6 sm:px-8 md:px-10 py-6 text-center max-w-[90%]"
+        variants={shouldReduce ? undefined : { animate: { transition: topLeftRoundStagger } }}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+      >
+        {/* Badge */}
+        <motion.div variants={shouldReduce ? undefined : topLeftRoundChildVariants}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4 sm:mb-5 border border-white/20">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500" />
+            </span>
+            <span className="text-sm font-medium text-white/90">{badge}</span>
+          </div>
+        </motion.div>
+
+        {/* Title */}
+        <motion.h1
+          variants={shouldReduce ? undefined : topLeftRoundChildVariants}
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-[1.2] tracking-tight"
+        >
+          <span
+            className="block bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent drop-shadow-2xl"
+            style={{ WebkitBoxDecorationBreak: 'clone', boxDecorationBreak: 'clone' }}
+          >
+            {title}
+          </span>
+        </motion.h1>
+
+        {/* Subtitle */}
+        <motion.p
+          variants={shouldReduce ? undefined : topLeftRoundChildVariants}
+          className="text-sm sm:text-base md:text-lg text-gray-200 drop-shadow-md leading-relaxed font-light"
+        >
+          {subtitle}
+        </motion.p>
+
+        {/* Search trigger */}
+        <motion.div variants={shouldReduce ? undefined : topLeftRoundChildVariants} className="mt-3 sm:mt-4">
+          <button
+            onClick={onSearchClick}
+            className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 text-white/70 cursor-pointer transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="text-sm">Search products...</span>
+          </button>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  )
+}

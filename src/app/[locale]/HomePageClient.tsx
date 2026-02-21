@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import type { PromotionalCategory } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import ProductCard from '@/components/products/ProductCard'
-import SearchAutocomplete from '@/components/SearchAutocomplete'
+import HeroSlider from '@/components/hero/HeroSlider'
 import {
   getRootCategoriesAction,
   getChildCategoriesWithDescendantCountsAction,
@@ -46,36 +45,6 @@ export default function HomePageClient({
   const [rootCategories, setRootCategories] = useState<Category[]>([])
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null)
   const [childCategories, setChildCategories] = useState<Category[]>([])
-
-  // Hero slider state
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const heroImages = [
-    '/images/hero-bg.jpg',
-    '/images/hero-bg-2.jpg',
-    '/images/hero-bg-3.jpg',
-    '/images/hero-bg-4.jpg',
-  ]
-
-  // Auto-rotate hero slider
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroImages.length)
-    }, 5000) // Change slide every 5 seconds
-
-    return () => clearInterval(interval)
-  }, [heroImages.length])
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % heroImages.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)
-  }
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index)
-  }
 
   // Load all root categories dynamically on mount
   useEffect(() => {
@@ -156,95 +125,8 @@ export default function HomePageClient({
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Section - Fashion Background Slider */}
-      <div className="relative overflow-hidden bg-navy-900 text-white">
-        {/* Background Image Slider */}
-        <div className="absolute inset-0">
-          {heroImages.map((image, index) => (
-            <div
-              key={image}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <Image
-                src={image}
-                alt={`Fashion background ${index + 1}`}
-                fill
-                className="object-cover"
-                priority={index === 0}
-                quality={90}
-              />
-            </div>
-          ))}
-          {/* Dark Overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/60 to-black/70"></div>
-        </div>
-
-        {/* Slider Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-          {heroImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`transition-all duration-300 rounded-full ${
-                index === currentSlide
-                  ? 'w-8 h-2 bg-white'
-                  : 'w-2 h-2 bg-white/50 hover:bg-white/75'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-20 md:py-28 lg:px-8 lg:py-36">
-          {/* Hero Content */}
-          <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-scale-up">
-            {/* Premium Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-4 sm:mb-6 md:mb-8 border border-white/20">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
-              </span>
-              <span className="text-sm font-medium text-white/90">Premium Experience closer to You</span>
-            </div>
-
-            {/* Main Heading - Display Scale */}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-3 sm:mb-4 md:mb-6 leading-[1.2] tracking-tight px-2 sm:px-4 pb-2 sm:pb-4 md:pb-6 pt-1 sm:pt-2">
-              <span className="block bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent drop-shadow-2xl" style={{WebkitBoxDecorationBreak: 'clone', boxDecorationBreak: 'clone'}}>
-                {t('hero.title')}
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 mb-6 sm:mb-8 md:mb-12 lg:mb-16 drop-shadow-md max-w-3xl mx-auto leading-relaxed font-light">
-              {t('hero.subtitle')}
-            </p>
-
-            {/* Value Propositions */}
-            
-          </div>
-
-          {/* Enhanced Search Bar */}
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 shadow-2xl border border-white/20">
-              <SearchAutocomplete
-                placeholder="Search for branded clothing at stock prices..."
-                large={true}
-                className="!bg-white/20 !backdrop-blur-sm !shadow-none !border-white/30 [&_input]:!text-white [&_input]:!placeholder-white/70"
-              />
-            </div>
-          </div>
-
-        </div>
-
-        {/* Bottom Wave Separator */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg className="w-full h-12 sm:h-16 text-gray-50" preserveAspectRatio="none" viewBox="0 0 1440 48" fill="currentColor">
-            <path d="M0,32L80,37.3C160,43,320,53,480,48C640,43,800,21,960,16C1120,11,1280,21,1360,26.7L1440,32L1440,48L1360,48C1280,48,1120,48,960,48C800,48,640,48,480,48C320,48,160,48,80,48L0,48Z"></path>
-          </svg>
-        </div>
-      </div>
+      {/* Hero Section - Animated Slider */}
+      <HeroSlider />
 
       {/* Category Filter */}
       <section className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
