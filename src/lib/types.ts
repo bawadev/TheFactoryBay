@@ -157,6 +157,22 @@ export interface ProductView {
   viewedAt: string
 }
 
+// Hero slides
+export type HeroAnimationType = 'left-panel' | 'top-left-round' | 'top-right-panel' | 'bottom-right-quarter'
+
+export interface HeroSlide {
+  id: string
+  imageUrl: string
+  animationType: HeroAnimationType
+  badgeText: string
+  title: string
+  subtitle: string
+  displayOrder: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // Promotional categories
 export interface PromotionalCategory {
   id: string

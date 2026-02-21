@@ -2,7 +2,6 @@ import type { Variants, Transition } from 'framer-motion'
 
 // ── Props interface shared by all slide components ──
 export interface HeroSlideProps {
-  badge: string
   title: string
   subtitle: string
   onSearchClick: () => void
@@ -11,12 +10,6 @@ export interface HeroSlideProps {
 // ── Timing constants ──
 export const SLIDE_INTERVAL = 6000 // ms per full cycle
 export const BG_FADE_DURATION = 1.2 // seconds
-export const HERO_IMAGES = [
-  '/images/hero-bg.jpg',
-  '/images/hero-bg-2.jpg',
-  '/images/hero-bg-3.jpg',
-  '/images/hero-bg-4.jpg',
-] as const
 
 // ── Reduced-motion fallback variant ──
 export const reducedMotionVariants: Variants = {
@@ -27,16 +20,14 @@ export const reducedMotionVariants: Variants = {
 
 // ── Slide 1: Left Panel ──
 export const leftPanelVariants: Variants = {
-  initial: { x: '-100%', opacity: 0 },
+  initial: { x: '-100%' },
   animate: {
     x: 0,
-    opacity: 1,
     transition: { type: 'spring', stiffness: 80, damping: 18 },
   },
   exit: {
     x: '-120%',
     rotate: -3,
-    opacity: 0,
     transition: { duration: 0.6, ease: 'easeIn' },
   },
 }
@@ -85,18 +76,16 @@ export const topLeftRoundStagger: Transition = {
 
 // ── Slide 3: Top-Right Panel ──
 export const topRightPanelVariants: Variants = {
-  initial: { x: '100%', skewX: 5, opacity: 0 },
+  initial: { x: '100%', skewX: 5 },
   animate: {
     x: 0,
     skewX: 0,
-    opacity: 1,
     transition: { type: 'spring', stiffness: 80, damping: 18 },
   },
   exit: {
     x: '120%',
     skewX: -8,
     scale: 0.95,
-    opacity: 0,
     transition: { duration: 0.5, ease: [0.76, 0, 0.24, 1] }, // easeInQuint
   },
 }

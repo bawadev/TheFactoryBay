@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
-import type { PromotionalCategory } from '@/lib/types'
+import type { PromotionalCategory, HeroSlide } from '@/lib/types'
 import type { Category } from '@/lib/repositories/category.repository'
 import ProductCard from '@/components/products/ProductCard'
 import HeroSlider from '@/components/hero/HeroSlider'
@@ -25,6 +25,7 @@ interface HomePageClientProps {
     category: PromotionalCategory
     products: ProductWithVariants[]
   }>
+  heroSlides: HeroSlide[]
 }
 
 export default function HomePageClient({
@@ -33,6 +34,7 @@ export default function HomePageClient({
   recentlyViewed,
   newArrivals,
   promotionalCategories,
+  heroSlides,
 }: HomePageClientProps) {
   const locale = useLocale()
   const router = useRouter()
@@ -126,7 +128,7 @@ export default function HomePageClient({
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Hero Section - Animated Slider */}
-      <HeroSlider />
+      <HeroSlider slides={heroSlides} />
 
       {/* Category Filter */}
       <section className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">

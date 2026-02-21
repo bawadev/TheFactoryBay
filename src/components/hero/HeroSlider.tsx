@@ -4,23 +4,26 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTranslations } from 'next-intl'
 import SearchAutocomplete from '@/components/SearchAutocomplete'
-import { SLIDE_INTERVAL, BG_FADE_DURATION, HERO_IMAGES } from './heroAnimationConfig'
+import { SLIDE_INTERVAL, BG_FADE_DURATION } from './heroAnimationConfig'
+import type { HeroSlide } from '@/lib/types'
 import SlideLeftPanel from './slides/SlideLeftPanel'
 import SlideTopLeftRound from './slides/SlideTopLeftRound'
 import SlideTopRightPanel from './slides/SlideTopRightPanel'
 import SlideBottomSweep from './slides/SlideBottomSweep'
 
-const SLIDE_COMPONENTS = [
-  SlideLeftPanel,
-  SlideTopLeftRound,
-  SlideTopRightPanel,
-  SlideBottomSweep,
-] as const
+const SLIDE_MAP: Record<string, typeof SlideLeftPanel> = {
+  'left-panel': SlideLeftPanel,
+  'top-left-round': SlideTopLeftRound,
+  'top-right-panel': SlideTopRightPanel,
+  'bottom-right-quarter': SlideBottomSweep,
+}
 
-export default function HeroSlider() {
-  const t = useTranslations('home')
+interface HeroSliderProps {
+  slides: HeroSlide[]
+}
+
+export default function HeroSlider({ slides }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [searchOpen, setSearchOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -50,18 +53,21 @@ export default function HeroSlider() {
 
   // Auto-rotate
   useEffect(() => {
+    if (slides.length === 0) return
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_IMAGES.length)
+      setCurrentSlide((prev) => (prev + 1) % slides.length)
     }, SLIDE_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [currentSlide]) // reset on manual navigation
+  }, [currentSlide, slides.length]) // reset on manual navigation
 
-  const SlideComponent = SLIDE_COMPONENTS[currentSlide]
+  if (slides.length === 0) return null
+
+  const currentSlideData = slides[currentSlide]
+  const SlideComponent = SLIDE_MAP[currentSlideData.animationType] || SlideLeftPanel
   const slideProps = {
-    badge: t('hero.badge'),
-    title: t('hero.title'),
-    subtitle: t('hero.subtitle'),
+    title: currentSlideData.title,
+    subtitle: currentSlideData.subtitle,
     onSearchClick: () => setSearchOpen(true),
   }
 
@@ -69,20 +75,21 @@ export default function HeroSlider() {
     <div className="relative overflow-hidden bg-navy-900 text-white">
       {/* Background images - all mounted, opacity controlled */}
       <div className="absolute inset-0">
-        {HERO_IMAGES.map((img, i) => (
+        {slides.map((slide, i) => (
           <motion.div
-            key={img}
+            key={slide.id}
             className="absolute inset-0"
             animate={{ opacity: i === currentSlide ? 1 : 0 }}
             transition={{ duration: BG_FADE_DURATION, ease: 'easeInOut' }}
           >
             <Image
-              src={img}
-              alt={`Fashion background ${i + 1}`}
+              src={slide.imageUrl}
+              alt={slide.title || `Fashion background ${i + 1}`}
               fill
               className="object-cover"
               priority={i === 0}
               quality={90}
+              unoptimized={slide.imageUrl.startsWith('http')}
             />
           </motion.div>
         ))}
@@ -155,7 +162,7 @@ export default function HeroSlider() {
 
       {/* Dot indicators */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-        {HERO_IMAGES.map((_, index) => (
+        {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}

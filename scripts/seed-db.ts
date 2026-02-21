@@ -9,6 +9,7 @@ import dotenv from 'dotenv'
 import { getSession, closeDriver } from '../src/lib/db'
 import { hashPassword } from '../src/lib/auth'
 import { createUser, findUserByEmail } from '../src/lib/repositories/user.repository'
+import { seedHeroSlides } from './seed-hero-slides'
 
 // Load environment variables
 dotenv.config({ path: '.env.local' })
@@ -86,6 +87,7 @@ async function seedDatabase() {
 
   try {
     await seedUsers()
+    await seedHeroSlides()
 
     console.log('\n' + '='.repeat(60))
     console.log('✅ Database seeding completed successfully!')

@@ -75,6 +75,13 @@ export const indexes = [
 
   `CREATE INDEX category_active_index IF NOT EXISTS
    FOR (c:Category) ON (c.isActive)`,
+
+  // HeroSlide indexes
+  `CREATE INDEX heroslide_display_order IF NOT EXISTS
+   FOR (h:HeroSlide) ON (h.displayOrder)`,
+
+  `CREATE INDEX heroslide_active IF NOT EXISTS
+   FOR (h:HeroSlide) ON (h.isActive)`,
 ]
 
 /**
