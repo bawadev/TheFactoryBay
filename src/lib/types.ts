@@ -194,5 +194,6 @@ export interface PromotionalCategoryItem {
   productId: string
   allocatedQuantity: number
   soldQuantity: number
+  isActive: boolean
   addedAt: string
 }

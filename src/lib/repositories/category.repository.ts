@@ -565,7 +565,7 @@ export async function getProductsByCategories(
   const query = includeDescendants
     ? `UNWIND $categoryIds as categoryId
        MATCH (c:Category {id: categoryId})
-       OPTIONAL MATCH (c)-[:HAS_CHILD*0..]->(descendant:Category)
+       OPTIONAL MATCH (descendant:Category)-[:CHILD_OF*0..]->(c)
        WITH collect(DISTINCT descendant.id) + collect(DISTINCT c.id) as allCategoryIds
        UNWIND allCategoryIds as catId
        MATCH (p:Product)-[:HAS_CATEGORY]->(cat:Category {id: catId})

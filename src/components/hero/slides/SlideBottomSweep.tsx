@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { HeroSlideProps } from '../heroAnimationConfig'
 import {
@@ -9,7 +10,7 @@ import {
   reducedMotionVariants,
 } from '../heroAnimationConfig'
 
-export default function SlideBottomSweep({ title, subtitle, onSearchClick }: HeroSlideProps) {
+export default function SlideBottomSweep({ title, subtitle, linkUrl, onSearchClick }: HeroSlideProps) {
   const shouldReduce = useReducedMotion()
   const variants = shouldReduce ? reducedMotionVariants : bottomSweepVariants
 
@@ -74,6 +75,18 @@ export default function SlideBottomSweep({ title, subtitle, onSearchClick }: Her
             <span className="text-sm">Search products...</span>
           </button>
         </motion.div>
+
+        {/* See More link */}
+        {linkUrl && (
+          <motion.div variants={shouldReduce ? undefined : bottomSweepChildVariants} className="mt-2 flex justify-end">
+            <Link href={linkUrl} className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors group">
+              <span>See More</span>
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </motion.div>
+        )}
       </motion.div>
     </motion.div>
   )

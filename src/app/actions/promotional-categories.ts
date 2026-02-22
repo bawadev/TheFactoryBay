@@ -92,6 +92,33 @@ export async function getPromotionalCategoryByIdAction(
 }
 
 /**
+ * Get promotional category by slug (public)
+ */
+export async function getPromotionalCategoryBySlugAction(
+  slug: string
+): Promise<ActionResponse<PromotionalCategory>> {
+  const session = getSession()
+
+  try {
+    const category = await promoCategoryRepo.getPromotionalCategoryBySlug(session, slug)
+
+    if (!category) {
+      return { success: false, message: 'Promotional category not found' }
+    }
+
+    return {
+      success: true,
+      data: category,
+    }
+  } catch (error: any) {
+    console.error('Error fetching promotional category by slug:', error)
+    return { success: false, message: error.message || 'Failed to fetch promotional category' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
  * Update promotional category (Admin only)
  */
 export async function updatePromotionalCategoryAction(
@@ -292,6 +319,45 @@ export async function getProductsByCategoryAction(
 }
 
 /**
+ * Toggle product visibility in a promotional category (Admin only)
+ */
+export async function toggleProductInCategoryAction(
+  categoryId: string,
+  productId: string,
+  isActive: boolean
+): Promise<ActionResponse<void>> {
+  const session = getSession()
+
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      return { success: false, message: 'Unauthorized. Admin access required.' }
+    }
+
+    const updated = await promoCategoryRepo.toggleProductInCategory(
+      session,
+      categoryId,
+      productId,
+      isActive
+    )
+
+    if (!updated) {
+      return { success: false, message: 'Product not found in category' }
+    }
+
+    return {
+      success: true,
+      message: `Product ${isActive ? 'shown' : 'hidden'} successfully`,
+    }
+  } catch (error: any) {
+    console.error('Error toggling product in category:', error)
+    return { success: false, message: error.message || 'Failed to toggle product visibility' }
+  } finally {
+    await session.close()
+  }
+}
+
+/**
  * Get category items with details for admin management
  */
 export async function getCategoryItemsWithDetailsAction(categoryId: string): Promise<
@@ -301,6 +367,7 @@ export async function getCategoryItemsWithDetailsAction(categoryId: string): Pro
       allocatedQuantity: number
       soldQuantity: number
       remainingQuantity: number
+      isActive: boolean
     }>
   >
 > {

@@ -5,12 +5,21 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchAutocomplete from '@/components/SearchAutocomplete'
-import { SLIDE_INTERVAL, BG_FADE_DURATION } from './heroAnimationConfig'
+import {
+  SLIDE_INTERVAL,
+  MOBILE_SLIDE_INTERVAL,
+  BG_FADE_DURATION,
+  mobileSlideVariants,
+  mobilePillVariants,
+  reducedMotionVariants,
+} from './heroAnimationConfig'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type { HeroSlide } from '@/lib/types'
 import SlideLeftPanel from './slides/SlideLeftPanel'
 import SlideTopLeftRound from './slides/SlideTopLeftRound'
 import SlideTopRightPanel from './slides/SlideTopRightPanel'
 import SlideBottomSweep from './slides/SlideBottomSweep'
+import SlideMobile from './slides/SlideMobile'
 
 const SLIDE_MAP: Record<string, typeof SlideLeftPanel> = {
   'left-panel': SlideLeftPanel,
@@ -25,10 +34,13 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ slides }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [slideDirection, setSlideDirection] = useState(1) // 1 = push left, -1 = push right
   const [searchOpen, setSearchOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const isMobile = useIsMobile()
 
   const goToSlide = useCallback((index: number) => {
+    setSlideDirection(index % 2 === 0 ? -1 : 1)
     setCurrentSlide(index)
   }, [])
 
@@ -51,15 +63,20 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
     }
   }, [searchOpen])
 
-  // Auto-rotate
+  // Auto-rotate — use shorter interval on mobile
   useEffect(() => {
     if (slides.length === 0) return
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
-    }, SLIDE_INTERVAL)
+      setCurrentSlide((prev) => {
+        const next = (prev + 1) % slides.length
+        // Alternate direction: even slides push left, odd push right
+        setSlideDirection(next % 2 === 0 ? -1 : 1)
+        return next
+      })
+    }, isMobile ? MOBILE_SLIDE_INTERVAL : SLIDE_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [currentSlide, slides.length]) // reset on manual navigation
+  }, [currentSlide, slides.length, isMobile]) // reset on manual navigation
 
   if (slides.length === 0) return null
 
@@ -68,13 +85,14 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
   const slideProps = {
     title: currentSlideData.title,
     subtitle: currentSlideData.subtitle,
+    linkUrl: currentSlideData.linkUrl,
     onSearchClick: () => setSearchOpen(true),
   }
 
   return (
     <div className="relative overflow-hidden bg-navy-900 text-white">
-      {/* Background images - all mounted, opacity controlled */}
-      <div className="absolute inset-0">
+      {/* ── Desktop Background: opacity crossfade (all mounted) ── */}
+      <div className="absolute inset-0 hidden md:block">
         {slides.map((slide, i) => (
           <motion.div
             key={slide.id}
@@ -97,11 +115,71 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/60 to-black/70" />
       </div>
 
-      {/* Animated panels - one at a time */}
-      <div className="relative min-h-[500px] md:min-h-[600px] lg:min-h-[700px]">
-        <AnimatePresence mode="wait">
-          <SlideComponent key={currentSlide} {...slideProps} />
+      {/* ── Mobile Background: sliding images ── */}
+      <div className="absolute inset-0 md:hidden">
+        <AnimatePresence initial={false} custom={slideDirection}>
+          <motion.div
+            key={currentSlide}
+            custom={slideDirection}
+            variants={mobileSlideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="absolute inset-0"
+          >
+            <Image
+              src={currentSlideData.imageUrl}
+              alt={currentSlideData.title || `Fashion background ${currentSlide + 1}`}
+              fill
+              className="object-cover"
+              priority={currentSlide === 0}
+              quality={90}
+              unoptimized={currentSlideData.imageUrl.startsWith('http')}
+            />
+          </motion.div>
         </AnimatePresence>
+        {/* Lighter overlay so image stays more visible on mobile */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/20 pointer-events-none" />
+      </div>
+
+      {/* ── Desktop Panels — one at a time ── */}
+      <div className="relative min-h-[500px] md:min-h-[600px] lg:min-h-[700px]">
+        <div className="hidden md:block h-full">
+          <AnimatePresence mode="wait">
+            <SlideComponent key={currentSlide} {...slideProps} />
+          </AnimatePresence>
+        </div>
+
+        {/* ── Floating search icon (mobile only) ── */}
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="absolute top-4 right-4 z-10 md:hidden p-2.5 rounded-full text-white/80 hover:text-white cursor-pointer transition-colors"
+          style={{
+            background: 'rgba(0,0,0,0.3)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.2)',
+          }}
+          aria-label="Search"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+
+        {/* ── Mobile Pill ── */}
+        <div className="md:hidden h-full min-h-[500px]">
+          <AnimatePresence initial={false} custom={slideDirection}>
+            <SlideMobile
+              key={currentSlide}
+              title={currentSlideData.title}
+              subtitle={currentSlideData.subtitle}
+              linkUrl={currentSlideData.linkUrl}
+              slideIndex={currentSlide}
+              slideDirection={slideDirection}
+            />
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Full-screen search overlay — portaled to body to escape overflow-hidden */}

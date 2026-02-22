@@ -29,9 +29,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="card-hover group overflow-hidden">
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-gray-100">
-          {firstVariant?.images?.[0] ? (
+          {(firstVariant?.images?.[0] || product.images?.[0]) ? (
             <Image
-              src={firstVariant.images[0]}
+              src={firstVariant?.images?.[0] || product.images[0]}
               alt={product.name}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"

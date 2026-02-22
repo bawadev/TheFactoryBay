@@ -145,6 +145,38 @@ export async function getPromotionalCategoryById(
 }
 
 /**
+ * Get promotional category by slug
+ */
+export async function getPromotionalCategoryBySlug(
+  session: Session,
+  slug: string
+): Promise<PromotionalCategory | null> {
+  const result = await session.run(
+    `
+    MATCH (c:PromotionalCategory {slug: $slug})
+    RETURN c
+    `,
+    { slug }
+  )
+
+  if (result.records.length === 0) return null
+
+  const category = result.records[0].get('c').properties
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    displayOrder: toNumber(category.displayOrder),
+    isActive: category.isActive,
+    startDate: category.startDate,
+    endDate: category.endDate,
+    createdAt: category.createdAt.toString(),
+    updatedAt: category.updatedAt.toString(),
+  }
+}
+
+/**
  * Update promotional category
  */
 export async function updatePromotionalCategory(
@@ -261,6 +293,7 @@ export async function addProductToCategory(
       r.id = randomUUID(),
       r.allocatedQuantity = $allocatedQuantity,
       r.soldQuantity = 0,
+      r.isActive = true,
       r.addedAt = $now
     ON MATCH SET
       r.allocatedQuantity = $allocatedQuantity
@@ -277,6 +310,7 @@ export async function addProductToCategory(
     productId,
     allocatedQuantity: toNumber(item.allocatedQuantity),
     soldQuantity: toNumber(item.soldQuantity),
+    isActive: item.isActive ?? true,
     addedAt: item.addedAt.toString(),
   }
 }
@@ -329,6 +363,7 @@ export async function updateCategoryItemQuantity(
     productId,
     allocatedQuantity: toNumber(item.allocatedQuantity),
     soldQuantity: toNumber(item.soldQuantity),
+    isActive: item.isActive ?? true,
     addedAt: item.addedAt.toString(),
   }
 }
@@ -344,7 +379,7 @@ export async function getProductsByCategory(
   const result = await session.run(
     `
     MATCH (c:PromotionalCategory {id: $categoryId})-[r:HAS_ITEM]->(p:Product)
-    WHERE r.allocatedQuantity > r.soldQuantity
+    WHERE r.allocatedQuantity > r.soldQuantity AND COALESCE(r.isActive, true) = true
     OPTIONAL MATCH (p)<-[:VARIANT_OF]-(v:ProductVariant)
     WITH p, r, collect({
       id: v.id,
@@ -395,6 +430,7 @@ export async function getCategoryItemsWithDetails(
     allocatedQuantity: number
     soldQuantity: number
     remainingQuantity: number
+    isActive: boolean
   }>
 > {
   const result = await session.run(
@@ -441,8 +477,30 @@ export async function getCategoryItemsWithDetails(
       allocatedQuantity,
       soldQuantity,
       remainingQuantity: allocatedQuantity - soldQuantity,
+      isActive: item.isActive ?? true,
     }
   })
+}
+
+/**
+ * Toggle product visibility in a promotional category
+ */
+export async function toggleProductInCategory(
+  session: Session,
+  categoryId: string,
+  productId: string,
+  isActive: boolean
+): Promise<boolean> {
+  const result = await session.run(
+    `
+    MATCH (c:PromotionalCategory {id: $categoryId})-[r:HAS_ITEM]->(p:Product {id: $productId})
+    SET r.isActive = $isActive
+    RETURN count(r) as updated
+    `,
+    { categoryId, productId, isActive }
+  )
+
+  return result.records[0].get('updated') > 0
 }
 
 /**
@@ -490,6 +548,7 @@ export async function getProductCategories(
       allocatedQuantity,
       soldQuantity,
       remainingQuantity: allocatedQuantity - soldQuantity,
+      isActive: item.isActive ?? true,
     }
   })
 }
@@ -515,6 +574,7 @@ export async function moveQuantityBetweenCategories(
       rTo.id = randomUUID(),
       rTo.allocatedQuantity = $quantity,
       rTo.soldQuantity = 0,
+      rTo.isActive = true,
       rTo.addedAt = datetime().epochMillis
     ON MATCH SET
       rTo.allocatedQuantity = rTo.allocatedQuantity + $quantity

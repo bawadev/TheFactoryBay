@@ -17,6 +17,7 @@ import {
   updateCategoryItemQuantityAction,
   moveQuantityBetweenCategoriesAction,
   getProductCategoriesAction,
+  toggleProductInCategoryAction,
 } from '@/app/actions/promotional-categories'
 import { searchProductsAction } from '@/app/actions/products'
 import Toast, { ToastType } from '@/components/Toast'
@@ -46,6 +47,7 @@ export default function PromotionalCategoriesClient({
       allocatedQuantity: number
       soldQuantity: number
       remainingQuantity: number
+      isActive: boolean
       totalAllocatedAcrossAllSections?: number
     }>
   >([])
@@ -297,6 +299,40 @@ export default function PromotionalCategoriesClient({
     setEditQuantityValue(0)
   }
 
+  const handleToggleSectionActive = async (category: PromotionalCategory) => {
+    const result = await updatePromotionalCategoryAction(category.id, {
+      isActive: !category.isActive,
+    })
+    if (result.success && result.data) {
+      setCategories(categories.map((c) => (c.id === result.data!.id ? result.data! : c)))
+      showToast(
+        `Section "${category.name}" ${!category.isActive ? 'activated' : 'deactivated'}`,
+        'success'
+      )
+    } else {
+      showToast(result.message || 'Failed to toggle section', 'error')
+    }
+  }
+
+  const handleToggleProductActive = async (productId: string, currentIsActive: boolean) => {
+    if (!selectedCategory) return
+
+    const result = await toggleProductInCategoryAction(
+      selectedCategory,
+      productId,
+      !currentIsActive
+    )
+    if (result.success) {
+      await loadCategoryProducts(selectedCategory)
+      showToast(
+        `Product ${!currentIsActive ? 'shown' : 'hidden'} successfully`,
+        'success'
+      )
+    } else {
+      showToast(result.message || 'Failed to toggle product visibility', 'error')
+    }
+  }
+
   const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
     if (!selectedCategory) return
 
@@ -425,13 +461,23 @@ export default function PromotionalCategoriesClient({
                         <h3 className="font-semibold text-gray-900">{category.name}</h3>
                         <p className="text-xs text-gray-600 mt-1">Order: {category.displayOrder}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                              category.isActive
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-600'
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleSectionActive(category)
+                            }}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                              category.isActive ? 'bg-green-500' : 'bg-gray-300'
                             }`}
+                            title={category.isActive ? 'Deactivate section' : 'Activate section'}
                           >
+                            <span
+                              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                category.isActive ? 'translate-x-4' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                          <span className={`text-xs font-medium ${category.isActive ? 'text-green-700' : 'text-gray-500'}`}>
                             {category.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
@@ -646,7 +692,7 @@ export default function PromotionalCategoriesClient({
 
                 {/* Existing Products */}
                 <div className="space-y-3">
-                  {categoryProducts.map(({ product, allocatedQuantity, soldQuantity, remainingQuantity, totalAllocatedAcrossAllSections }) => {
+                  {categoryProducts.map(({ product, allocatedQuantity, soldQuantity, remainingQuantity, isActive: productIsActive, totalAllocatedAcrossAllSections }) => {
                     const totalStock = product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)
                     const totalAllocated = totalAllocatedAcrossAllSections || allocatedQuantity
                     const availableStock = totalStock - totalAllocated
@@ -655,7 +701,11 @@ export default function PromotionalCategoriesClient({
                     return (
                       <div
                         key={product.id}
-                        className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+                        className={`flex items-center gap-4 p-4 border rounded-lg transition-colors ${
+                          productIsActive
+                            ? 'border-gray-200 hover:border-purple-300'
+                            : 'border-gray-200 opacity-60 bg-gray-50'
+                        }`}
                       >
                         <div className="relative w-16 h-16 bg-gray-100 rounded flex-shrink-0">
                           {product.images?.[0] && (
@@ -669,7 +719,14 @@ export default function PromotionalCategoriesClient({
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 truncate">{product.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900 truncate">{product.name}</h4>
+                            {!productIsActive && (
+                              <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded">
+                                Hidden
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600">{product.brand}</p>
                           <div className="flex items-center gap-4 mt-2 text-xs">
                             <span className="text-navy-600 flex items-center gap-1 group relative">
@@ -747,6 +804,19 @@ export default function PromotionalCategoriesClient({
                             </>
                           ) : (
                             <>
+                              <button
+                                onClick={() => handleToggleProductActive(product.id, productIsActive)}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                  productIsActive ? 'bg-green-500' : 'bg-gray-300'
+                                }`}
+                                title={productIsActive ? 'Hide product' : 'Show product'}
+                              >
+                                <span
+                                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                    productIsActive ? 'translate-x-4' : 'translate-x-1'
+                                  }`}
+                                />
+                              </button>
                               <button
                                 onClick={() => handleStartEditQuantity(product.id, allocatedQuantity)}
                                 className="px-3 py-1.5 bg-navy-600 text-white rounded text-sm font-medium hover:bg-navy-700 transition-colors"

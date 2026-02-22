@@ -4,11 +4,13 @@ import type { Variants, Transition } from 'framer-motion'
 export interface HeroSlideProps {
   title: string
   subtitle: string
+  linkUrl?: string
   onSearchClick: () => void
 }
 
 // ── Timing constants ──
 export const SLIDE_INTERVAL = 6000 // ms per full cycle
+export const MOBILE_SLIDE_INTERVAL = 4000 // ms per mobile cycle
 export const BG_FADE_DURATION = 1.2 // seconds
 
 // ── Reduced-motion fallback variant ──
@@ -130,4 +132,42 @@ export const bottomSweepChildVariants: Variants = {
 export const bottomSweepStagger: Transition = {
   staggerChildren: 0.12,
   delayChildren: 0.2,
+}
+
+// ── Mobile: Sliding image variants (direction-aware via custom prop) ──
+// custom = 1 means "entering from right, exiting to left" (push left)
+// custom = -1 means "entering from left, exiting to right" (push right)
+export const mobileSlideVariants: Variants = {
+  initial: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? '-100%' : '100%',
+    opacity: 0,
+    transition: { duration: 0.4, ease: 'easeIn' },
+  }),
+}
+
+// ── Mobile: Pill panel variants (direction-aware via custom prop) ──
+export const mobilePillVariants: Variants = {
+  initial: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: { type: 'spring', stiffness: 120, damping: 20 },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? '-100%' : '100%',
+    opacity: 0,
+    transition: { duration: 0.3, ease: 'easeIn' },
+  }),
 }
