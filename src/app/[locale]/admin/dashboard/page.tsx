@@ -169,6 +169,40 @@ export default async function AdminDashboardPage() {
             </div>
           </Link>
 
+          {/* Hero Slides Card */}
+          <Link
+            href={`/${locale}/admin/hero-slides`}
+            className="group relative bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <div className="flex items-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-pink-600 group-hover:bg-pink-700 transition-colors">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-xl font-semibold text-gray-900">Hero Slides</h2>
+            </div>
+            <p className="text-sm text-gray-600">
+              Manage homepage hero slider images, animations, and text content.
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-pink-600 group-hover:text-pink-700">
+              Manage Slides
+              <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+
           {/* Custom Filters Card */}
           <Link
             href={`/${locale}/admin/filters`}
