@@ -248,7 +248,10 @@ export default function HomePageClient({
                 {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
               </p>
             </div>
-            <Link href={`/${locale}/shop`} className="text-sm font-medium text-navy-600 hover:text-navy-700">
+            <Link
+              href={`/${locale}/shop?category=${Array.from(selectedCategoryIds).join(',')}`}
+              className="text-sm font-medium text-navy-600 hover:text-navy-700"
+            >
               {t('viewAll')}
             </Link>
           </div>

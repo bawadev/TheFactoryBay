@@ -143,7 +143,8 @@
   "shop": {
     "title": "Shop All Products",
     "subtitle": "Premium brands at stock prices",
-    "productsCount": "{count} products"
+    "productsCount": "{count} products",
+    "filteredProducts": "Filtered Products"
   },
   "product": {
     "stockPrice": "Stock Price",

@@ -241,21 +241,19 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                 Manage homepage hero slider images and content
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href={`/${locale}/admin`}
-                className="text-sm text-navy-600 hover:text-navy-700 font-medium"
-              >
-                ← Back to Dashboard
-              </Link>
-              <button
-                onClick={openCreateModal}
-                className="px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700 transition-colors text-sm font-medium"
-              >
-                + Add Slide
-              </button>
-            </div>
+            <Link
+              href={`/${locale}/admin`}
+              className="text-sm text-navy-600 hover:text-navy-700 font-medium"
+            >
+              ← Back to Dashboard
+            </Link>
           </div>
+          <button
+            onClick={openCreateModal}
+            className="mt-4 w-full sm:w-auto px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700 transition-colors text-sm font-medium"
+          >
+            + Add Slide
+          </button>
         </div>
       </div>
 
@@ -296,7 +294,8 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                   slide.isActive ? 'border-gray-200' : 'border-gray-200 opacity-60'
                 }`}
               >
-                <div className="flex items-center gap-4 p-4">
+                {/* Desktop layout */}
+                <div className="hidden sm:flex items-center gap-4 p-4">
                   {/* Reorder controls */}
                   <div className="flex flex-col gap-1">
                     <button
@@ -353,7 +352,6 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Active toggle */}
                     <button
                       onClick={() => handleToggleActive(slide)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -367,8 +365,6 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                         }`}
                       />
                     </button>
-
-                    {/* Edit */}
                     <button
                       onClick={() => openEditModal(slide)}
                       className="p-2 text-gray-400 hover:text-navy-600 transition-colors"
@@ -383,8 +379,6 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                         />
                       </svg>
                     </button>
-
-                    {/* Delete */}
                     <button
                       onClick={() =>
                         setConfirmDialog({
@@ -404,6 +398,119 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                         />
                       </svg>
                     </button>
+                  </div>
+                </div>
+
+                {/* Mobile layout */}
+                <div className="sm:hidden p-3">
+                  <div className="flex gap-3">
+                    {/* Reorder + Order number */}
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index === 0}
+                        className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Move up"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <div className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-xs font-bold text-gray-600">
+                        {index + 1}
+                      </div>
+                      <button
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index === slides.length - 1}
+                        className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Move down"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Content area */}
+                    <div className="flex-1 min-w-0">
+                      {/* Thumbnail */}
+                      <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-100 mb-2">
+                        <img
+                          src={slide.imageUrl}
+                          alt={slide.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Info */}
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">
+                        {slide.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                          {getAnimationLabel(slide.animationType)}
+                        </span>
+                        {slide.badgeText && (
+                          <span className="text-xs text-gray-500 truncate">{slide.badgeText}</span>
+                        )}
+                      </div>
+                      {slide.subtitle && (
+                        <p className="text-xs text-gray-600 truncate mt-1">{slide.subtitle}</p>
+                      )}
+
+                      {/* Actions row */}
+                      <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
+                        <button
+                          onClick={() => handleToggleActive(slide)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                            slide.isActive ? 'bg-green-500' : 'bg-gray-300'
+                          }`}
+                          aria-label={slide.isActive ? 'Deactivate' : 'Activate'}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              slide.isActive ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                        <span className="text-xs text-gray-500">{slide.isActive ? 'Active' : 'Inactive'}</span>
+                        <div className="ml-auto flex items-center gap-1">
+                          <button
+                            onClick={() => openEditModal(slide)}
+                            className="p-1.5 text-gray-400 hover:text-navy-600 transition-colors"
+                            aria-label="Edit"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() =>
+                              setConfirmDialog({
+                                slideId: slide.id,
+                                title: slide.title,
+                              })
+                            }
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                            aria-label="Delete"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

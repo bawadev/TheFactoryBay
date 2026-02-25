@@ -292,7 +292,7 @@ export async function getFullProductsByCategoriesAction(categoryIds: string[]) {
       { categoryIds }
     )
 
-    const products = result.records.map(record => record.get('p'))
+    const products = result.records.map(record => convertNeo4jIntegers(record.get('p')))
     return { success: true, data: products }
   } catch (error: unknown) {
     console.error('Error fetching full products by categories:', error)

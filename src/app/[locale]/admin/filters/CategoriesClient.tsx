@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import type { CategoryWithChildren, CategoryTree } from '@/lib/repositories/category.repository'
 import {
   createCategoryAction,
@@ -29,6 +30,7 @@ interface CategoriesClientProps {
 }
 
 export default function CategoriesClient({ initialCategories }: CategoriesClientProps) {
+  const locale = useLocale()
   const [categoryTree, setCategoryTree] = useState<CategoryTree>(initialCategories)
 
   // Flatten tree to array for easier processing
@@ -300,8 +302,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
     return (
       <div key={category.id} className="border-l-2 border-gray-200">
+        {/* Desktop Layout */}
         <div
-          className="flex items-center gap-3 p-3 hover:bg-gray-50 group"
+          className="hidden sm:flex items-center gap-3 p-3 hover:bg-gray-50 group"
           style={{ paddingLeft: `${depth * 24 + 12}px` }}
         >
           {/* Expand/Collapse Button */}
@@ -467,6 +470,152 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           </div>
         </div>
 
+        {/* Mobile Layout */}
+        <div
+          className="sm:hidden p-3"
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        >
+          <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+            {/* Top Row: expand + name */}
+            <div className="flex items-center gap-2">
+              {hasChildren ? (
+                <button
+                  onClick={() => toggleExpand(category.id)}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500"
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                </div>
+              )}
+
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleUpdateCategory(category.id, editingCategory.name, category.isActive)
+                    } else if (e.key === 'Escape') {
+                      setEditingCategory(null)
+                    }
+                  }}
+                  className="flex-1 px-2 py-1 border border-blue-500 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              ) : (
+                <span className={`flex-1 font-medium text-sm ${category.isActive ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {category.name}
+                  {category.isFeatured && (
+                    <svg className="w-3.5 h-3.5 text-yellow-500 fill-current inline ml-1" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                    </svg>
+                  )}
+                </span>
+              )}
+            </div>
+
+            {/* Badges Row */}
+            <div className="flex flex-wrap gap-1.5 mt-2 ml-8">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                category.hierarchy === 'ladies' ? 'bg-pink-100 text-pink-700' :
+                category.hierarchy === 'gents' ? 'bg-blue-100 text-blue-700' :
+                'bg-purple-100 text-purple-700'
+              }`}>
+                {category.hierarchy.charAt(0).toUpperCase() + category.hierarchy.slice(1)}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+                L{category.level}
+              </span>
+              {category.productCount !== undefined && category.productCount > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
+                  {category.productCount} products
+                </span>
+              )}
+              <button
+                onClick={() => handleToggleFeatured(category.id, category.isFeatured)}
+                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  category.isFeatured
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {category.isFeatured ? 'Featured' : 'Hidden'}
+              </button>
+              <button
+                onClick={() => handleUpdateCategory(category.id, category.name, !category.isActive)}
+                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  category.isActive
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {category.isActive ? 'Active' : 'Inactive'}
+              </button>
+            </div>
+
+            {/* Actions Row */}
+            <div className="flex items-center gap-3 mt-2 ml-8 pt-2 border-t border-gray-100">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={() => handleUpdateCategory(category.id, editingCategory.name, category.isActive)}
+                    className="text-green-600 text-xs font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingCategory(null)}
+                    className="text-gray-600 text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleViewProducts(category)}
+                    className="text-purple-600 text-xs font-medium"
+                  >
+                    Products
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedParentId(category.id)
+                      setShowCreateModal(true)
+                    }}
+                    className="text-blue-600 text-xs font-medium"
+                  >
+                    + Child
+                  </button>
+                  <button
+                    onClick={() => setEditingCategory({ id: category.id, name: category.name })}
+                    className="text-gray-600 text-xs font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCategory(category.id, category.name)}
+                    className="text-red-600 text-xs font-medium"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Render children */}
         {hasChildren && isExpanded && (
           <div>
@@ -484,38 +633,44 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-navy-900">Categories</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-navy-900">Categories</h1>
               <p className="mt-1 text-sm text-gray-600">
-                Manage your product category hierarchy (Ladies, Gents, Kids)
+                Manage your product category hierarchy
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowOnlyFeatured(!showOnlyFeatured)}
-                className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                  showOnlyFeatured
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {showOnlyFeatured ? 'Show All' : 'Show Featured Only'}
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedParentId(null)
-                  setShowCreateModal(true)
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                + New Category
-              </button>
-              <Link
-                href="/en/admin"
-                className="text-sm text-navy-600 hover:text-navy-700 font-medium"
-              >
-                ← Back to Dashboard
-              </Link>
-            </div>
+            <Link
+              href={`/${locale}/admin/dashboard`}
+              className="text-sm text-navy-600 hover:text-navy-700 font-medium hidden sm:inline"
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowOnlyFeatured(!showOnlyFeatured)}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium text-sm ${
+                showOnlyFeatured
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {showOnlyFeatured ? 'Show All' : 'Featured Only'}
+            </button>
+            <button
+              onClick={() => {
+                setSelectedParentId(null)
+                setShowCreateModal(true)
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+              + New Category
+            </button>
+            <Link
+              href={`/${locale}/admin/dashboard`}
+              className="px-4 py-2 text-sm text-navy-600 hover:text-navy-700 font-medium sm:hidden"
+            >
+              ← Dashboard
+            </Link>
           </div>
         </div>
       </div>

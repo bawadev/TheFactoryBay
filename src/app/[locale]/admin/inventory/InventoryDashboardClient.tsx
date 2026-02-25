@@ -127,22 +127,22 @@ export default function InventoryDashboardClient({ products }: InventoryDashboar
 
       {/* Statistics Cards */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-sm font-medium text-gray-600">Total Products</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Total Products</p>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-sm font-medium text-gray-600">Total Units</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.totalUnits}</p>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Total Units</p>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalUnits}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-orange-200">
-            <p className="text-sm font-medium text-orange-600">Low Stock Items</p>
-            <p className="mt-2 text-3xl font-bold text-orange-600">{stats.lowStock}</p>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-orange-200">
+            <p className="text-xs sm:text-sm font-medium text-orange-600">Low Stock</p>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-orange-600">{stats.lowStock}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-red-200">
-            <p className="text-sm font-medium text-red-600">Out of Stock</p>
-            <p className="mt-2 text-3xl font-bold text-red-600">{stats.outOfStock}</p>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-red-200">
+            <p className="text-xs sm:text-sm font-medium text-red-600">Out of Stock</p>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-red-600">{stats.outOfStock}</p>
           </div>
         </div>
 
@@ -225,43 +225,38 @@ export default function InventoryDashboardClient({ products }: InventoryDashboar
         {/* Inventory List */}
         <div className="mt-6 space-y-3">
           {filteredAndSortedProducts.map((product) => {
-            const firstImage = product.variants.find(v => v.images?.length > 0)?.images?.[0]
+            const firstImage = product.images?.[0]
 
             return (
               <div
                 key={product.id}
-                className={`bg-white rounded-lg shadow-sm border-2 p-4 ${getStockLevelColor(product.stockLevel)}`}
+                className={`bg-white rounded-lg shadow-sm border-2 overflow-hidden ${getStockLevelColor(product.stockLevel)}`}
               >
-                <div className="flex items-center gap-4">
-                  {/* Product Image */}
-                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                    {firstImage ? (
-                      <Image
-                        src={firstImage}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-gray-400 text-xs">
-                        No Image
-                      </div>
-                    )}
-                  </div>
+                {/* Mobile layout */}
+                <div className="sm:hidden p-3">
+                  <div className="flex gap-3 items-start">
+                    {/* Thumbnail */}
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                      {firstImage ? (
+                        <Image
+                          src={firstImage}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-gray-400 text-xs">
+                          No Img
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Product Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">{product.name}</h3>
-                        <p className="text-sm text-gray-600">{product.brand} • {product.category}</p>
-                        <p className="text-xs text-gray-500 mt-1">SKU: {product.sku}</p>
-                      </div>
-
-                      {/* Stock Level Badge */}
-                      <div className="flex-shrink-0">
-                        <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+                        <span className={`flex-shrink-0 inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${
                           product.stockLevel === 'out' ? 'bg-red-600 text-white' :
                           product.stockLevel === 'low' ? 'bg-orange-600 text-white' :
                           product.stockLevel === 'medium' ? 'bg-yellow-600 text-white' :
@@ -270,50 +265,139 @@ export default function InventoryDashboardClient({ products }: InventoryDashboar
                           {getStockLevelBadge(product.stockLevel)}
                         </span>
                       </div>
+                      <p className="text-xs text-gray-600">{product.brand} &middot; {product.category}</p>
+                      <p className="text-xs text-gray-400">SKU: {product.sku}</p>
                     </div>
+                  </div>
 
-                    {/* Variants Breakdown */}
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {product.variants.map((variant) => (
-                        <div
-                          key={variant.id}
-                          className="flex items-center justify-between bg-white bg-opacity-50 px-3 py-2 rounded border border-gray-200"
-                        >
-                          <div className="text-sm">
-                            <span className="font-medium">{variant.size}</span>
-                            <span className="text-gray-600"> • {variant.color}</span>
-                          </div>
-                          <div className={`text-sm font-semibold ${
-                            variant.stockQuantity === 0 ? 'text-red-600' :
-                            variant.stockQuantity < 5 ? 'text-orange-600' :
-                            variant.stockQuantity < 15 ? 'text-yellow-600' :
-                            'text-green-600'
-                          }`}>
-                            {variant.stockQuantity} units
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Total and Actions */}
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-900">Total Stock: </span>
-                        <span className={`font-bold ${
-                          product.totalStock === 0 ? 'text-red-600' :
-                          product.totalStock < 10 ? 'text-orange-600' :
-                          product.totalStock < 30 ? 'text-yellow-600' :
+                  {/* Variants */}
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {product.variants.map((variant) => (
+                      <div
+                        key={variant.id}
+                        className="flex items-center justify-between bg-white bg-opacity-50 px-2 py-1.5 rounded border border-gray-200 text-xs"
+                      >
+                        <span>
+                          <span className="font-medium">{variant.size}</span>
+                          <span className="text-gray-500"> &middot; {variant.color}</span>
+                        </span>
+                        <span className={`font-semibold ml-1 ${
+                          variant.stockQuantity === 0 ? 'text-red-600' :
+                          variant.stockQuantity < 5 ? 'text-orange-600' :
+                          variant.stockQuantity < 15 ? 'text-yellow-600' :
                           'text-green-600'
                         }`}>
-                          {product.totalStock} units
+                          {variant.stockQuantity}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                    <div className="text-xs">
+                      <span className="font-medium text-gray-900">Total: </span>
+                      <span className={`font-bold ${
+                        product.totalStock === 0 ? 'text-red-600' :
+                        product.totalStock < 10 ? 'text-orange-600' :
+                        product.totalStock < 30 ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
+                        {product.totalStock} units
+                      </span>
+                    </div>
+                    <Link
+                      href={`/${locale}/admin/products`}
+                      className="text-xs font-medium text-navy-600 hover:text-navy-700"
+                    >
+                      Manage →
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Desktop layout */}
+                <div className="hidden sm:block p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Product Image */}
+                    <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                      {firstImage ? (
+                        <Image
+                          src={firstImage}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-gray-400 text-xs">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 truncate">{product.name}</h3>
+                          <p className="text-sm text-gray-600">{product.brand} &middot; {product.category}</p>
+                          <p className="text-xs text-gray-500 mt-1">SKU: {product.sku}</p>
+                        </div>
+
+                        {/* Stock Level Badge */}
+                        <div className="flex-shrink-0">
+                          <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                            product.stockLevel === 'out' ? 'bg-red-600 text-white' :
+                            product.stockLevel === 'low' ? 'bg-orange-600 text-white' :
+                            product.stockLevel === 'medium' ? 'bg-yellow-600 text-white' :
+                            'bg-green-600 text-white'
+                          }`}>
+                            {getStockLevelBadge(product.stockLevel)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Variants Breakdown */}
+                      <div className="mt-3 grid grid-cols-2 lg:grid-cols-3 gap-2">
+                        {product.variants.map((variant) => (
+                          <div
+                            key={variant.id}
+                            className="flex items-center justify-between bg-white bg-opacity-50 px-3 py-2 rounded border border-gray-200"
+                          >
+                            <div className="text-sm">
+                              <span className="font-medium">{variant.size}</span>
+                              <span className="text-gray-600"> &middot; {variant.color}</span>
+                            </div>
+                            <div className={`text-sm font-semibold ${
+                              variant.stockQuantity === 0 ? 'text-red-600' :
+                              variant.stockQuantity < 5 ? 'text-orange-600' :
+                              variant.stockQuantity < 15 ? 'text-yellow-600' :
+                              'text-green-600'
+                            }`}>
+                              {variant.stockQuantity} units
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Total and Actions */}
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-900">Total Stock: </span>
+                          <span className={`font-bold ${
+                            product.totalStock === 0 ? 'text-red-600' :
+                            product.totalStock < 10 ? 'text-orange-600' :
+                            product.totalStock < 30 ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`}>
+                            {product.totalStock} units
+                          </span>
+                        </div>
                         <Link
-                          href={`/admin/products/${product.id}/edit`}
+                          href={`/${locale}/admin/products`}
                           className="text-sm font-medium text-navy-600 hover:text-navy-700"
                         >
-                          Update Stock →
+                          Manage Products →
                         </Link>
                       </div>
                     </div>
