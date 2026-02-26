@@ -170,7 +170,8 @@
     "noImage": "No Image",
     "discountBadge": "-{percent}% OFF",
     "saveAmount": "Save Rs {amount} ({percent}%)",
-    "home": "Home"
+    "home": "Home",
+    "quickBuy": "Quick Buy"
   },
   "cart": {
     "title": "Shopping Cart",

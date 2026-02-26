@@ -170,7 +170,8 @@
     "noImage": "රූපයක් නැත",
     "discountBadge": "-{percent}% වට්ටම",
     "saveAmount": "Rs {amount} ඉතිරි කරගන්න ({percent}%)",
-    "home": "මුල් පිටුව"
+    "home": "මුල් පිටුව",
+    "quickBuy": "ඉක්මන් මිලදී ගැනීම"
   },
   "cart": {
     "title": "සාප්පු කරත්තය",

@@ -1,10 +1,13 @@
 'use client'
 
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import { getColorHex } from '@/lib/color-utils'
+import { addToCartAction } from '@/app/actions/cart'
 
 interface ProductCardProps {
   product: ProductWithVariants
@@ -13,6 +16,21 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const locale = useLocale()
   const t = useTranslations('product')
+  const router = useRouter()
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Unique sizes and colors
+  const sizes = Array.from(new Set(product.variants.map((v) => v.size)))
+  const colors = Array.from(new Set(product.variants.map((v) => v.color)))
+
+  // State
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
+  const [isQuickBuying, setIsQuickBuying] = useState(false)
+  const [showMobilePanel, setShowMobilePanel] = useState(false)
+  const [needsSelection, setNeedsSelection] = useState<'size' | 'color' | null>(null)
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   // Get first variant for display image and check stock
   const firstVariant = product.variants[0]
@@ -24,10 +42,107 @@ export default function ProductCard({ product }: ProductCardProps) {
     ((product.retailPrice - product.stockPrice) / product.retailPrice) * 100
   )
 
+  const productUrl = `/${locale}/product/${product.id}`
+
+  // Auto-select if only 1 size or 1 color
+  useEffect(() => {
+    if (sizes.length === 1) setSelectedSize(sizes[0])
+    if (colors.length === 1) setSelectedColor(colors[0])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect touch device
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia('(hover: none)').matches)
+  }, [])
+
+  // Close mobile panel on outside click
+  useEffect(() => {
+    if (!showMobilePanel) return
+    function handleOutsideClick(e: MouseEvent) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setShowMobilePanel(false)
+      }
+    }
+    document.addEventListener('click', handleOutsideClick)
+    return () => document.removeEventListener('click', handleOutsideClick)
+  }, [showMobilePanel])
+
+  // Clear needsSelection flash after 1.5s
+  useEffect(() => {
+    if (!needsSelection) return
+    const timer = setTimeout(() => setNeedsSelection(null), 1500)
+    return () => clearTimeout(timer)
+  }, [needsSelection])
+
+  // Variant resolution
+  const selectedVariant =
+    selectedSize && selectedColor
+      ? product.variants.find((v) => v.size === selectedSize && v.color === selectedColor)
+      : null
+
+  const isVariantAvailable = selectedVariant ? selectedVariant.stockQuantity > 0 : false
+
+  // Handle card click for mobile tap-to-toggle
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isTouchDevice || !hasStock) return
+      if (!showMobilePanel) {
+        e.preventDefault()
+        setShowMobilePanel(true)
+      }
+    },
+    [isTouchDevice, showMobilePanel, hasStock]
+  )
+
+  // Validate selection before action
+  const validateSelection = (): boolean => {
+    if (!selectedSize) {
+      setNeedsSelection('size')
+      return false
+    }
+    if (!selectedColor) {
+      setNeedsSelection('color')
+      return false
+    }
+    return true
+  }
+
+  // Add to cart handler
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (!validateSelection() || !selectedVariant || !isVariantAvailable) return
+
+    setIsAdding(true)
+    try {
+      await addToCartAction(selectedVariant.id, 1)
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  // Quick buy handler
+  const handleQuickBuy = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (!validateSelection() || !selectedVariant || !isVariantAvailable) return
+
+    setIsQuickBuying(true)
+    try {
+      await addToCartAction(selectedVariant.id, 1)
+      router.push(`/${locale}/checkout`)
+    } finally {
+      setIsQuickBuying(false)
+    }
+  }
+
+  // Whether the panel should be in "revealed" state
+  const panelRevealed = showMobilePanel ? '-translate-y-1/2' : ''
+
   return (
-    <Link href={`/${locale}/product/${product.id}`}>
-      <div className="card-hover group overflow-hidden">
-        {/* Image Container */}
+    <div ref={cardRef} className="card-hover group relative overflow-hidden">
+      {/* Image - clickable link */}
+      <Link href={productUrl} onClick={handleCardClick}>
         <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-gray-100">
           {(firstVariant?.images?.[0] || product.images?.[0]) ? (
             <Image
@@ -65,61 +180,145 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
         </div>
+      </Link>
 
-        {/* Content */}
-        <div className="p-2 sm:p-3 md:p-4">
-          {/* Brand */}
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-            {product.brand}
-          </p>
-
-          {/* Product Name */}
-          <h3 className="mt-1 font-semibold text-gray-900 md:line-clamp-2 lg:line-clamp-2 text-xs sm:text-sm md:text-base group-hover:text-navy-600 transition-colors break-words">
-            {product.name}
-          </h3>
-
-          {/* Category & Gender */}
-          <p className="mt-1 text-xs text-gray-500">
-            {product.category} • {product.gender}
-          </p>
-
-          {/* Prices */}
-          <div className="mt-2 sm:mt-3 flex items-baseline justify-between">
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-1 min-w-0">
-              <span className="text-sm sm:text-base md:text-lg font-bold text-navy-600 truncate">
-                Rs {product.stockPrice.toFixed(0)}
-              </span>
-              <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through truncate">
-                Rs {product.retailPrice.toFixed(0)}
-              </span>
-            </div>
-          </div>
-
-          {/* Available Colors */}
-          {product.variants.length > 1 && (
-            <div className="mt-3 flex items-center gap-1">
-              {Array.from(new Set(product.variants.map((v) => v.color)))
-                .slice(0, 4)
-                .map((color, index) => (
-                  <div
-                    key={index}
-                    className="h-4 w-4 rounded-full border border-gray-300"
-                    style={{ backgroundColor: getColorHex(color) }}
-                    title={color}
-                  />
-                ))}
-              {Array.from(new Set(product.variants.map((v) => v.color)))
-                .length > 4 && (
-                <span className="text-xs text-gray-500">
-                  +
-                  {Array.from(new Set(product.variants.map((v) => v.color)))
-                    .length - 4}
+      {/*
+        Bottom panel — a fixed-height window with two stacked "pages".
+        Page 1 (name+price) is visible by default.
+        On hover the inner wrapper slides up by 50%, revealing page 2 (quick-add).
+      */}
+      <div className={`${hasStock ? 'h-[72px]' : ''} overflow-hidden`}>
+        <div
+          className={
+            hasStock
+              ? `transition-transform duration-300 ease-out group-hover:-translate-y-1/2 ${panelRevealed}`
+              : ''
+          }
+        >
+          {/* Page 1: Name + Price */}
+          <Link
+            href={productUrl}
+            onClick={handleCardClick}
+            className={`block ${hasStock ? 'h-[72px]' : ''}`}
+          >
+            <div className={`p-2 sm:p-3 ${hasStock ? 'flex h-full flex-col justify-center' : ''}`}>
+              <h3 className="line-clamp-1 sm:line-clamp-2 font-semibold text-gray-900 text-xs sm:text-sm md:text-base group-hover:text-navy-600 transition-colors break-words">
+                {product.name}
+              </h3>
+              <div className="mt-1 flex items-baseline gap-1 min-w-0">
+                <span className="text-sm sm:text-base md:text-lg font-bold text-navy-600 truncate">
+                  Rs {product.stockPrice.toFixed(0)}
                 </span>
-              )}
+                <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through truncate">
+                  Rs {product.retailPrice.toFixed(0)}
+                </span>
+              </div>
+            </div>
+          </Link>
+
+          {/* Page 2: Quick Add (revealed when panel slides up) */}
+          {hasStock && (
+            <div
+              className="h-[72px] flex flex-col justify-between p-1.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Size buttons */}
+              <div
+                className={`flex flex-wrap gap-1 ${
+                  needsSelection === 'size' ? 'ring-1 ring-red-400 rounded p-0.5 animate-pulse' : ''
+                }`}
+              >
+                {sizes.map((size) => (
+                  <button
+                    key={size}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      setSelectedSize(selectedSize === size ? null : size)
+                    }}
+                    className={`h-6 px-1.5 text-[10px] font-medium rounded transition-colors ${
+                      selectedSize === size
+                        ? 'bg-navy-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+
+              {/* Color circles + Action buttons */}
+              <div className="flex items-center justify-between">
+                <div
+                  className={`flex flex-wrap gap-1 ${
+                    needsSelection === 'color'
+                      ? 'ring-1 ring-red-400 rounded p-0.5 animate-pulse'
+                      : ''
+                  }`}
+                >
+                  {colors.map((color) => (
+                    <button
+                      key={color}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        setSelectedColor(selectedColor === color ? null : color)
+                      }}
+                      className={`h-5 w-5 rounded-full border-2 transition-all ${
+                        selectedColor === color
+                          ? 'border-navy-600 ring-1 ring-navy-300'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      style={{ backgroundColor: getColorHex(color) }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex gap-1.5">
+                  {/* Add to Cart */}
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isAdding || (selectedVariant !== null && !isVariantAvailable)}
+                    title={t('addToCart')}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-600 text-white transition-colors hover:bg-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isAdding ? (
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Quick Buy */}
+                  <button
+                    onClick={handleQuickBuy}
+                    disabled={isQuickBuying || (selectedVariant !== null && !isVariantAvailable)}
+                    title={t('quickBuy')}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-coral-600 text-white transition-colors hover:bg-coral-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isQuickBuying ? (
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
