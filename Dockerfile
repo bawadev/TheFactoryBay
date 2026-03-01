@@ -5,7 +5,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --prefer-offline --no-audit --no-fund
+RUN npm install --force
 
 # Build the application
 FROM base AS builder
