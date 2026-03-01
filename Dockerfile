@@ -5,7 +5,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json ./
-COPY package-lock.json* ./
+RUN if [ -f package-lock.json ]; then cp package-lock.json .; fi
 RUN npm install --force
 
 # Build the application
