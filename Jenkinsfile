@@ -49,10 +49,5 @@ deployEcommerceStack(
     domain:        envConfig.domain,
     serverIp:      envConfig.serverIp,
     credentialId:  envConfig.credentialId,
-    dbInitScripts: [
-        'npm run db:init',
-        'npm run db:seed',
-        'npm run setup:categories',
-        'npm run minio:init'
-    ]
+    dbInitScripts: [] // Disabled - requires tsx which is not in production image
 )
