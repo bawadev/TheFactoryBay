@@ -26,11 +26,6 @@ def config = [
         domain:       'renfy.style',
         serverIp:     '62.171.137.117',
         credentialId: 'ssh-key-prod'
-    ],
-    prod2: [
-        domain:       'renfy.style',
-        serverIp:     '95.111.252.20',
-        credentialId: 'ssh-key-prod2'
     ]
 ]
 
