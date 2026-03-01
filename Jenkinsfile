@@ -3,6 +3,19 @@
 // Environment configuration
 def environment = params.ENVIRONMENT ?: 'dev'
 
+// Handle "auto" mode - detect environment from branch name
+if (environment == 'auto') {
+    def branch = env.BRANCH_NAME ?: 'master'
+    if (branch == 'master' || branch == 'main') {
+        environment = 'prod'
+    } else if (branch == 'dev') {
+        environment = 'dev'
+    } else {
+        environment = 'dev' // Default for feature branches
+    }
+    echo "Auto-detected environment: ${environment} from branch: ${branch}"
+}
+
 def config = [
     dev: [
         domain:       'dev.renfy.style',
