@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
 import { getColorHex } from '@/lib/color-utils'
-import { addToCartAction } from '@/app/actions/cart'
+import { useCartStore } from '@/stores/cartStore'
 
 interface ProductCardProps {
   product: ProductWithVariants
@@ -18,6 +18,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const t = useTranslations('product')
   const router = useRouter()
   const cardRef = useRef<HTMLDivElement>(null)
+  const { addToCart, isAdding: isAddingToCart } = useCartStore()
 
   // Unique sizes and colors
   const sizes = Array.from(new Set(product.variants.map((v) => v.size)))
@@ -114,10 +115,12 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (!validateSelection() || !selectedVariant || !isVariantAvailable) return
 
     setIsAdding(true)
-    try {
-      await addToCartAction(selectedVariant.id, 1)
-    } finally {
-      setIsAdding(false)
+    const success = await addToCart(selectedVariant.id, 1)
+    setIsAdding(false)
+
+    // Show brief success indication (could be enhanced with toast)
+    if (success) {
+      // Could add a small visual feedback here
     }
   }
 
@@ -128,10 +131,10 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (!validateSelection() || !selectedVariant || !isVariantAvailable) return
 
     setIsQuickBuying(true)
-    try {
-      await addToCartAction(selectedVariant.id, 1)
+    const success = await addToCart(selectedVariant.id, 1)
+    if (success) {
       router.push(`/${locale}/checkout`)
-    } finally {
+    } else {
       setIsQuickBuying(false)
     }
   }
@@ -268,11 +271,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                   {/* Add to Cart */}
                   <button
                     onClick={handleAddToCart}
-                    disabled={isAdding || (selectedVariant !== null && !isVariantAvailable)}
+                    disabled={isAdding || isAddingToCart || (selectedVariant !== null && !isVariantAvailable)}
                     title={t('addToCart')}
                     className="flex h-7 w-7 items-center justify-center rounded-full bg-black-700 text-white transition-colors hover:bg-black-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isAdding ? (
+                    {isAdding || isAddingToCart ? (
                       <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -287,11 +290,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                   {/* Quick Buy */}
                   <button
                     onClick={handleQuickBuy}
-                    disabled={isQuickBuying || (selectedVariant !== null && !isVariantAvailable)}
+                    disabled={isQuickBuying || isAddingToCart || (selectedVariant !== null && !isVariantAvailable)}
                     title={t('quickBuy')}
                     className="flex h-7 w-7 items-center justify-center rounded-full bg-black-800 text-white transition-colors hover:bg-coral-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isQuickBuying ? (
+                    {isQuickBuying || isAddingToCart ? (
                       <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />

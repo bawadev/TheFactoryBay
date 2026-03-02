@@ -5,46 +5,30 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useLocale } from 'next-intl'
 import type { CartItemWithDetails } from '@/lib/repositories/cart.repository'
-import { removeFromCartAction, updateCartItemAction } from '@/app/actions/cart'
+import { useCartStore } from '@/stores/cartStore'
 import { getColorHex } from '@/lib/color-utils'
 
 interface CartItemProps {
   item: CartItemWithDetails
-  onUpdate: () => void
 }
 
-export default function CartItem({ item, onUpdate }: CartItemProps) {
+export default function CartItem({ item }: CartItemProps) {
   const locale = useLocale()
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [quantity, setQuantity] = useState(item.quantity)
+  const { updateQuantity, removeFromCart, isUpdating, isRemoving } = useCartStore()
+  const [localQuantity, setLocalQuantity] = useState(item.quantity)
 
   const handleQuantityChange = async (newQuantity: number) => {
     if (newQuantity < 1 || newQuantity > item.variant.stockQuantity) return
 
-    setIsUpdating(true)
-    setQuantity(newQuantity)
-
-    const result = await updateCartItemAction(item.variantId, newQuantity)
-
-    if (result.success) {
-      onUpdate()
-    }
-
-    setIsUpdating(false)
+    setLocalQuantity(newQuantity)
+    await updateQuantity(item.variantId, newQuantity)
   }
 
   const handleRemove = async () => {
-    setIsUpdating(true)
-    const result = await removeFromCartAction(item.variantId)
-
-    if (result.success) {
-      onUpdate()
-    } else {
-      setIsUpdating(false)
-    }
+    await removeFromCart(item.variantId)
   }
 
-  const itemTotal = item.product.stockPrice * quantity
+  const itemTotal = item.product.stockPrice * localQuantity
 
   return (
     <div className="flex gap-4 border-b border-gray-200 py-6">
@@ -110,16 +94,16 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
           {/* Quantity Selector */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => handleQuantityChange(quantity - 1)}
-              disabled={isUpdating || quantity <= 1}
+              onClick={() => handleQuantityChange(localQuantity - 1)}
+              disabled={isUpdating || localQuantity <= 1}
               className="h-8 w-8 rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               −
             </button>
-            <span className="w-12 text-center text-sm font-medium">{quantity}</span>
+            <span className="w-12 text-center text-sm font-medium">{localQuantity}</span>
             <button
-              onClick={() => handleQuantityChange(quantity + 1)}
-              disabled={isUpdating || quantity >= item.variant.stockQuantity}
+              onClick={() => handleQuantityChange(localQuantity + 1)}
+              disabled={isUpdating || localQuantity >= item.variant.stockQuantity}
               className="h-8 w-8 rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               +
@@ -129,7 +113,7 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
           {/* Remove Button */}
           <button
             onClick={handleRemove}
-            disabled={isUpdating}
+            disabled={isRemoving}
             className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
           >
             Remove

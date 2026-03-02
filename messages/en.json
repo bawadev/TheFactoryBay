@@ -244,7 +244,8 @@
     "ship": "Ship to Address",
     "shipDescription": "We'll deliver to your shipping address",
     "collect": "Collect in Person",
-    "collectDescription": "Pick up from our location"
+    "collectDescription": "Pick up from our location",
+    "paymentMethod": "Payment Method"
   },
   "order": {
     "confirmation": {

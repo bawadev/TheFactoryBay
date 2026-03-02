@@ -5,10 +5,10 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { getCartCountAction } from '@/app/actions/cart'
 import { logoutAction } from '@/app/actions/auth'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { shopConfig } from '@/config/shop'
+import { useCartStore } from '@/stores/cartStore'
 
 interface NavigationProps {
   isAuthenticated: boolean
@@ -19,7 +19,7 @@ interface NavigationProps {
 export default function Navigation({ isAuthenticated, userEmail, isAdmin }: NavigationProps) {
   const locale = useLocale()
   const pathname = usePathname()
-  const [cartCount, setCartCount] = useState(0)
+  const { itemCount, loadCart } = useCartStore()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
@@ -27,10 +27,10 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
   const t = useTranslations('nav')
   const tCommon = useTranslations('common')
 
-  // Fetch cart count on mount and when pathname changes (for all users)
+  // Load cart on mount
   useEffect(() => {
-    fetchCartCount()
-  }, [pathname])
+    loadCart()
+  }, [])
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -68,16 +68,11 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
     setIsProfileDropdownOpen(false)
   }, [pathname])
 
-  const fetchCartCount = async () => {
-    const result = await getCartCountAction()
-    if (result.success && result.data) {
-      setCartCount(result.data.count)
-    }
-  }
-
   const handleLogout = async () => {
     setIsLoggingOut(true)
     await logoutAction()
+    // Reload cart after logout to clear it
+    await loadCart()
     window.location.href = `/${locale}`
   }
 
@@ -129,9 +124,9 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
                       d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                     />
                   </svg>
-                  {cartCount > 0 && (
+                  {itemCount > 0 && (
                     <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-black-800 text-xs font-bold text-white shadow-lg animate-pulse">
-                      {cartCount > 9 ? '9+' : cartCount}
+                      {itemCount > 9 ? '9+' : itemCount}
                     </span>
                   )}
                 </div>
@@ -246,9 +241,9 @@ export default function Navigation({ isAuthenticated, userEmail, isAdmin }: Navi
                       d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                     />
                   </svg>
-                  {cartCount > 0 && (
+                  {itemCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black-800 text-xs font-bold text-white shadow-lg">
-                      {cartCount > 9 ? '9+' : cartCount}
+                      {itemCount > 9 ? '9+' : itemCount}
                     </span>
                   )}
                 </div>

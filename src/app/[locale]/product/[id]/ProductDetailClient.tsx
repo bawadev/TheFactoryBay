@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import type { ProductWithVariants } from '@/lib/repositories/product.repository'
-import { addToCartAction } from '@/app/actions/cart'
 import { trackProductViewAction } from '@/app/actions/user-profile'
 import { getColorHex } from '@/lib/color-utils'
+import { useCartStore } from '@/stores/cartStore'
 
 interface ProductDetailClientProps {
   product: ProductWithVariants
@@ -19,6 +19,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const locale = useLocale()
   const t = useTranslations('product')
   const tNav = useTranslations('nav')
+  const { addToCart, isAdding: isAddingToCart } = useCartStore()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
@@ -81,14 +82,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     setIsAdding(true)
     setMessage(null)
 
-    const result = await addToCartAction(selectedVariant.id, 1)
+    const success = await addToCart(selectedVariant.id, 1)
 
-    if (result.success) {
+    if (success) {
       setMessage({ type: 'success', text: t('addedToCart') })
       // Clear message after 3 seconds
       setTimeout(() => setMessage(null), 3000)
     } else {
-      setMessage({ type: 'error', text: result.message || t('failedToAddToCart') })
+      setMessage({ type: 'error', text: t('failedToAddToCart') })
     }
 
     setIsAdding(false)
@@ -222,7 +223,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-block rounded-full bg-gold-100 px-3 py-1 text-sm font-semibold text-gold-700">
+                <span className="inline-block rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-black-700">
                   {t('saveAmount', { amount: savings.toFixed(2), percent: discountPercent })}
                 </span>
                 <span className="text-sm text-gray-600">{t('stockPrice')}</span>
@@ -360,10 +361,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             <div className="space-y-3">
               <button
                 onClick={handleAddToCart}
-                disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || isAdding}
+                disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || isAdding || isAddingToCart}
                 className="btn-primary w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isAdding
+                {isAdding || isAddingToCart
                   ? t('adding')
                   : !selectedSize || !selectedColor
                   ? t('selectSizeAndColor')
