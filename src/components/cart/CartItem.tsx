@@ -74,7 +74,7 @@ export default function CartItem({ item, onUpdate }: CartItemProps) {
           <div className="flex-1">
             <Link
               href={`/${locale}/product/${item.product.id}`}
-              className="text-sm font-semibold text-gray-900 hover:text-black-700 transition-colors"
+              className="text-sm font-semibold text-black-700 hover:text-black-700 transition-colors"
             >
               {item.product.name}
             </Link>

@@ -157,7 +157,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Discount Badge */}
           {discountPercent > 0 && (
-            <div className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-bold text-black-900 shadow-lg z-10">
+            <div className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-bold text-black-700 shadow-lg z-10">
               -{discountPercent}%
             </div>
           )}
@@ -188,7 +188,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             onClick={handleCardClick}
             className="block"
           >
-            <h3 className="line-clamp-2 font-semibold text-gray-900 text-xs sm:text-sm md:text-base group-hover:text-black-700 transition-colors break-words leading-tight">
+            <h3 className="line-clamp-2 font-semibold text-black-700 text-xs sm:text-sm md:text-base group-hover:text-black-700 transition-colors break-words leading-tight">
               {product.name}
             </h3>
             <div className="mt-1 flex items-baseline gap-1 min-w-0">

@@ -186,7 +186,7 @@ export default function CategoriesClient() {
               </button>
               <button
                 onClick={() => setEditingCategory(null)}
-                className="text-gray-600 hover:text-gray-800 text-sm"
+                className="text-gray-600 hover:text-black-700 text-sm"
               >
                 Cancel
               </button>
@@ -199,7 +199,7 @@ export default function CategoriesClient() {
                   setEditingCategory(category.id)
                   setEditingName(category.name)
                 }}
-                className="text-black-600 hover:text-black-800 text-xs"
+                className="text-black-600 hover:text-black-700 text-xs"
               >
                 ✏️
               </button>
@@ -216,7 +216,7 @@ export default function CategoriesClient() {
 
           {/* Featured Badge */}
           {category.isFeatured && (
-            <span className="text-xs bg-gray-100 text-black-800 px-2 py-1 rounded">
+            <span className="text-xs bg-gray-100 text-black-700 px-2 py-1 rounded">
               ⭐ Featured
             </span>
           )}

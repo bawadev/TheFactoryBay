@@ -108,7 +108,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               {tNav('shop')}
             </Link>
             <span>/</span>
-            <span className="text-gray-900">{product.name}</span>
+            <span className="text-black-700">{product.name}</span>
           </nav>
         </div>
       </div>
@@ -137,7 +137,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
               {/* Discount Badge */}
               {discountPercent > 0 && (
-                <div className="absolute right-4 top-4 rounded-full bg-gray-500 px-4 py-2 text-sm font-bold text-black-900 shadow-lg">
+                <div className="absolute right-4 top-4 rounded-full bg-gray-500 px-4 py-2 text-sm font-bold text-black-700 shadow-lg">
                   {t('discountBadge', { percent: discountPercent })}
                 </div>
               )}
@@ -150,7 +150,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Previous image"
                   >
-                    <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-black-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
@@ -159,7 +159,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Next image"
                   >
-                    <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-black-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -205,7 +205,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-600">
                 {product.brand}
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-black-900">{product.name}</h1>
+              <h1 className="mt-2 text-3xl font-bold text-black-700">{product.name}</h1>
               <p className="mt-2 text-sm text-gray-600">
                 {product.gender}
               </p>
@@ -231,13 +231,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
             {/* Description */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('description')}</h2>
+              <h2 className="text-lg font-semibold text-black-700">{t('description')}</h2>
               <p className="mt-2 text-gray-600 leading-relaxed">{product.description}</p>
             </div>
 
             {/* Size Selection */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">
+              <h3 className="text-sm font-semibold text-black-700">
                 {t('selectSize')} {selectedSize && <span className="text-black-700">({selectedSize})</span>}
               </h3>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -273,7 +273,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
             {/* Color Selection */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">
+              <h3 className="text-sm font-semibold text-black-700">
                 {t('selectColor')} {selectedColor && <span className="text-black-700">({selectedColor})</span>}
               </h3>
               <div className="mt-3 flex flex-wrap gap-3">
@@ -322,7 +322,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                       selectedVariant.stockQuantity > 0 ? 'bg-green-500' : 'bg-red-500'
                     }`}
                   />
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-black-700">
                     {selectedVariant.stockQuantity > 0
                       ? selectedVariant.stockQuantity < 10
                         ? t('onlyLeft', { count: selectedVariant.stockQuantity })
@@ -333,14 +333,14 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               ) : hasStock ? (
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-green-500" />
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-black-700">
                     {totalStock < 10 ? t('onlyLeft', { count: totalStock }) : t('inStock')}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-red-500" />
-                  <span className="text-sm font-medium text-gray-900">{t('outOfStock')}</span>
+                  <span className="text-sm font-medium text-black-700">{t('outOfStock')}</span>
                 </div>
               )}
             </div>
@@ -378,15 +378,15 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             <div className="border-t border-gray-200 pt-6 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{t('sku')}</span>
-                <span className="font-medium text-gray-900">{product.sku}</span>
+                <span className="font-medium text-black-700">{product.sku}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{t('category')}</span>
-                <span className="font-medium text-gray-900">{product.category}</span>
+                <span className="font-medium text-black-700">{product.category}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{t('gender')}</span>
-                <span className="font-medium text-gray-900">{product.gender}</span>
+                <span className="font-medium text-black-700">{product.gender}</span>
               </div>
             </div>
           </div>

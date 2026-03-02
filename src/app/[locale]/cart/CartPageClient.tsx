@@ -83,7 +83,7 @@ export default function CartPageClient({
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-black-900">{t('title')}</h1>
+              <h1 className="text-3xl font-bold text-black-700">{t('title')}</h1>
               <p className="mt-2 text-gray-600">
                 {t('itemsInCart', { count: itemCount })}
               </p>
@@ -123,13 +123,13 @@ export default function CartPageClient({
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="rounded-lg bg-white p-6 shadow-sm sticky top-4">
-              <h2 className="text-lg font-bold text-gray-900">{t('summary')}</h2>
+              <h2 className="text-lg font-bold text-black-700">{t('summary')}</h2>
 
               <div className="mt-6 space-y-4">
                 {/* Subtotal */}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('subtotal')}</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-black-700">
                     Rs {total.toFixed(2)}
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export default function CartPageClient({
                 {/* Total */}
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex justify-between">
-                    <span className="text-base font-bold text-gray-900">{t('total')}</span>
+                    <span className="text-base font-bold text-black-700">{t('total')}</span>
                     <span className="text-2xl font-bold text-black-700">
                       Rs {(total + (total >= 100 ? 0 : 9.99)).toFixed(2)}
                     </span>

@@ -84,10 +84,10 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-black-900">Order Management</h1>
+              <h1 className="text-3xl font-bold text-black-700">Order Management</h1>
               <p className="mt-1 text-sm text-gray-600">Manage customer orders and fulfillment</p>
             </div>
-            <Link href={`/${locale}/admin/dashboard`} className="text-sm text-black-700 hover:text-black-800 font-medium">
+            <Link href={`/${locale}/admin/dashboard`} className="text-sm text-black-700 hover:text-black-700 font-medium">
               ← Back to Dashboard
             </Link>
           </div>
@@ -111,7 +111,7 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">Rs {totalRevenue.toFixed(2)}</p>
+            <p className="mt-2 text-3xl font-bold text-black-700">Rs {totalRevenue.toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -136,25 +136,25 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
                     <div className="flex items-center gap-6">
                       <div>
                         <p className="text-xs text-gray-600">Order Number</p>
-                        <p className="font-semibold text-gray-900">{order.orderNumber}</p>
+                        <p className="font-semibold text-black-700">{order.orderNumber}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Date</p>
-                        <p className="text-sm text-gray-900">{orderDate}</p>
+                        <p className="text-sm text-black-700">{orderDate}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Total</p>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-black-700">
                           Rs {order.totalAmount.toFixed(2)}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Items</p>
-                        <p className="text-sm text-gray-900">{order.items.length} items</p>
+                        <p className="text-sm text-black-700">{order.items.length} items</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Delivery</p>
-                        <p className="text-sm text-gray-900">
+                        <p className="text-sm text-black-700">
                           {order.deliveryMethod === 'SHIP' ? '📦 Ship' : '🏪 Collect'}
                         </p>
                       </div>
@@ -165,7 +165,7 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
                       </span>
                       <Link
                         href={`/${locale}/order/${order.id}`}
-                        className="text-sm font-medium text-black-700 hover:text-black-800"
+                        className="text-sm font-medium text-black-700 hover:text-black-700"
                         target="_blank"
                       >
                         View Details →
@@ -195,14 +195,14 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{item.product.name}</p>
+                          <p className="text-sm font-medium text-black-700 truncate">{item.product.name}</p>
                           <p className="text-xs text-gray-600">{item.product.brand}</p>
                           <p className="text-xs text-gray-500">
                             Size: {item.variant.size} • Color: {item.variant.color} • Qty: {item.quantity}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-sm font-semibold text-black-700">
                             Rs {(item.priceAtPurchase * item.quantity).toFixed(2)}
                           </p>
                         </div>
@@ -213,7 +213,7 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
                   {/* Shipping Address */}
                   <div className="border-t border-gray-200 pt-4 mb-4">
                     <p className="text-xs font-medium text-gray-600 mb-2">Shipping Address</p>
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-black-700">
                       <p className="font-medium">{order.shippingAddress.fullName}</p>
                       <p>{order.shippingAddress.addressLine1}</p>
                       {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
@@ -276,7 +276,7 @@ export default function AdminOrdersClient({ orders: initialOrders }: AdminOrders
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No orders</h3>
+            <h3 className="mt-2 text-sm font-medium text-black-700">No orders</h3>
             <p className="mt-1 text-sm text-gray-500">Orders will appear here when customers place them.</p>
           </div>
         )}

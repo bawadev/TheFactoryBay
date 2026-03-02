@@ -413,10 +413,10 @@ export default function PromotionalCategoriesClient({
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-black-900">Promotional Sections</h1>
+                <h1 className="text-3xl font-bold text-black-700">Promotional Sections</h1>
                 <Link
                   href={`/${locale}/admin/dashboard`}
-                  className="text-sm text-black-700 hover:text-black-800 font-medium flex items-center gap-1"
+                  className="text-sm text-black-700 hover:text-black-700 font-medium flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -444,7 +444,7 @@ export default function PromotionalCategoriesClient({
           {/* Sections List */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Sections</h2>
+              <h2 className="text-lg font-semibold text-black-700 mb-4">Sections</h2>
               <div className="space-y-2">
                 {categories.map((category) => (
                   <div
@@ -458,7 +458,7 @@ export default function PromotionalCategoriesClient({
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                        <h3 className="font-semibold text-black-700">{category.name}</h3>
                         <p className="text-xs text-gray-600 mt-1">Order: {category.displayOrder}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <button
@@ -497,7 +497,7 @@ export default function PromotionalCategoriesClient({
                               endDate: category.endDate || '',
                             })
                           }}
-                          className="text-black-700 hover:text-black-800 text-xs"
+                          className="text-black-700 hover:text-black-700 text-xs"
                         >
                           Edit
                         </button>
@@ -522,11 +522,11 @@ export default function PromotionalCategoriesClient({
           <div className="lg:col-span-2">
             {selectedCategory ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Products in Section</h2>
+                <h2 className="text-lg font-semibold text-black-700 mb-4">Products in Section</h2>
 
                 {/* Add Product Section */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-3">Add Products</h3>
+                  <h3 className="font-semibold text-black-700 mb-3">Add Products</h3>
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
                       <input
@@ -594,7 +594,7 @@ export default function PromotionalCategoriesClient({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-2">
                                   <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-base text-gray-900 truncate">{product.name}</h4>
+                                    <h4 className="font-bold text-base text-black-700 truncate">{product.name}</h4>
                                     <p className="text-sm text-gray-600">{product.brand}</p>
                                     <p className="text-xs text-gray-500 mt-1">SKU: {product.sku}</p>
                                   </div>
@@ -608,7 +608,7 @@ export default function PromotionalCategoriesClient({
                                 {/* Pricing */}
                                 <div className="flex items-center gap-3 mb-2">
                                   <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-bold text-black-900">
+                                    <span className="text-lg font-bold text-black-700">
                                       Rs {product.stockPrice.toFixed(2)}
                                     </span>
                                     <span className="text-sm text-gray-500 line-through">
@@ -720,7 +720,7 @@ export default function PromotionalCategoriesClient({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900 truncate">{product.name}</h4>
+                            <h4 className="font-semibold text-black-700 truncate">{product.name}</h4>
                             {!productIsActive && (
                               <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded">
                                 Hidden
@@ -858,7 +858,7 @@ export default function PromotionalCategoriesClient({
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Products in Multiple Sections</h2>
+                <h2 className="text-xl font-semibold text-black-700">Products in Multiple Sections</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   Products that appear in 2 or more promotional sections
                 </p>
@@ -897,7 +897,7 @@ export default function PromotionalCategoriesClient({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                        <h3 className="font-semibold text-black-700 truncate">{product.name}</h3>
                         <p className="text-sm text-gray-600">{product.brand}</p>
                         <p className="text-xs text-gray-500 mt-1">
                           Stock: <span className="text-green-600 font-medium">{totalStock}</span>
@@ -916,7 +916,7 @@ export default function PromotionalCategoriesClient({
                             className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-black-700"
                           >
                             {category.name}
-                            <span className="ml-1 text-black-900 font-semibold">({allocatedQuantity})</span>
+                            <span className="ml-1 text-black-700 font-semibold">({allocatedQuantity})</span>
                           </span>
                         ))}
                       </div>
@@ -933,7 +933,7 @@ export default function PromotionalCategoriesClient({
       {(showCreateForm || editingCategory) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl font-bold text-black-700 mb-4">
               {editingCategory ? 'Edit Section' : 'Create Section'}
             </h2>
 
@@ -1038,7 +1038,7 @@ export default function PromotionalCategoriesClient({
                   setEditingCategory(null)
                   resetForm()
                 }}
-                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                className="flex-1 bg-gray-200 text-black-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
               >
                 Cancel
               </button>

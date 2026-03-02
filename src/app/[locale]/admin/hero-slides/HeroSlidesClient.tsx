@@ -13,6 +13,7 @@ import {
 import { deleteImage } from '@/app/actions/upload'
 import ImageUpload from '@/components/ui/ImageUpload'
 import Notification from '@/components/ui/Notification'
+import { shopConfig } from '@/config/shop'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const ANIMATION_OPTIONS: { value: HeroAnimationType; label: string }[] = [
@@ -236,14 +237,14 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-black-900">Hero Slides</h1>
+              <h1 className="text-3xl font-bold text-black-700">Hero Slides</h1>
               <p className="mt-1 text-sm text-gray-600">
                 Manage homepage hero slider images and content
               </p>
             </div>
             <Link
               href={`/${locale}/admin`}
-              className="text-sm text-black-700 hover:text-black-800 font-medium"
+              className="text-sm text-black-700 hover:text-black-700 font-medium"
             >
               ← Back to Dashboard
             </Link>
@@ -274,7 +275,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No hero slides</h3>
+            <h3 className="mt-4 text-lg font-medium text-black-700">No hero slides</h3>
             <p className="mt-2 text-sm text-gray-600">
               Get started by creating your first hero slide.
             </p>
@@ -337,10 +338,10 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                   {/* Slide info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-base font-semibold text-gray-900 truncate">
+                      <h3 className="text-base font-semibold text-black-700 truncate">
                         {slide.title}
                       </h3>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-black-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-black-700">
                         {getAnimationLabel(slide.animationType)}
                       </span>
                     </div>
@@ -443,11 +444,11 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                       </div>
 
                       {/* Info */}
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">
+                      <h3 className="text-sm font-semibold text-black-700 truncate">
                         {slide.title}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-black-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-black-700">
                           {getAnimationLabel(slide.animationType)}
                         </span>
                         {slide.badgeText && (
@@ -526,7 +527,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-black-700">
                   {editingSlide ? 'Edit Slide' : 'Add New Slide'}
                 </h2>
                 <button
@@ -583,7 +584,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                     type="text"
                     value={form.title}
                     onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g. Ecom"
+                    placeholder={`e.g. ${shopConfig.name}`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black-700 focus:border-transparent text-sm"
                   />
                 </div>
@@ -597,7 +598,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                     type="text"
                     value={form.subtitle}
                     onChange={(e) => setForm((prev) => ({ ...prev, subtitle: e.target.value }))}
-                    placeholder="e.g. Branded Clothing at Stock Prices"
+                    placeholder={`e.g. ${shopConfig.tagline}`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black-700 focus:border-transparent text-sm"
                   />
                 </div>
@@ -613,7 +614,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                       onClick={() => setSectionDropdownOpen(!sectionDropdownOpen)}
                       className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-left focus:ring-2 focus:ring-black-700 focus:border-transparent"
                     >
-                      <span className={form.linkUrl && form.linkUrl !== '__custom__' && promotionalCategories.find((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl) ? 'text-gray-900' : form.linkUrl === '__custom__' || (form.linkUrl && !promotionalCategories.some((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl)) ? 'text-gray-900' : 'text-gray-500'}>
+                      <span className={form.linkUrl && form.linkUrl !== '__custom__' && promotionalCategories.find((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl) ? 'text-black-700' : form.linkUrl === '__custom__' || (form.linkUrl && !promotionalCategories.some((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl)) ? 'text-black-700' : 'text-gray-500'}>
                         {form.linkUrl === ''
                           ? 'None (no link)'
                           : form.linkUrl === '__custom__'
@@ -633,7 +634,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                             setForm((prev) => ({ ...prev, linkUrl: '' }))
                             setSectionDropdownOpen(false)
                           }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${form.linkUrl === '' ? 'bg-gray-50 text-black-800 font-medium' : 'text-gray-700'}`}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${form.linkUrl === '' ? 'bg-gray-50 text-black-700 font-medium' : 'text-gray-700'}`}
                         >
                           <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -648,7 +649,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                               setForm((prev) => ({ ...prev, linkUrl: `/en/shop?promo=${cat.slug}` }))
                               setSectionDropdownOpen(false)
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${form.linkUrl === `/en/shop?promo=${cat.slug}` ? 'bg-gray-50 text-black-800 font-medium' : 'text-gray-700'}`}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${form.linkUrl === `/en/shop?promo=${cat.slug}` ? 'bg-gray-50 text-black-700 font-medium' : 'text-gray-700'}`}
                           >
                             <svg className="w-4 h-4 text-black-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -662,7 +663,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                             setForm((prev) => ({ ...prev, linkUrl: '__custom__' }))
                             setSectionDropdownOpen(false)
                           }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100 ${form.linkUrl === '__custom__' || (form.linkUrl && !promotionalCategories.some((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl) && form.linkUrl !== '') ? 'bg-gray-50 text-black-800 font-medium' : 'text-gray-700'}`}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100 ${form.linkUrl === '__custom__' || (form.linkUrl && !promotionalCategories.some((cat) => `/en/shop?promo=${cat.slug}` === form.linkUrl) && form.linkUrl !== '') ? 'bg-gray-50 text-black-700 font-medium' : 'text-gray-700'}`}
                         >
                           <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
