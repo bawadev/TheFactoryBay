@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
-import type { HeroSlide, HeroAnimationType, PromotionalCategory } from '@/lib/types'
+import type { HeroSlide, HeroAnimationType, PromotionalCategory, HeroColorTheme } from '@/lib/types'
 import {
   createHeroSlideAction,
   updateHeroSlideAction,
@@ -23,6 +23,11 @@ const ANIMATION_OPTIONS: { value: HeroAnimationType; label: string }[] = [
   { value: 'bottom-right-quarter', label: 'Bottom Right Quarter' },
 ]
 
+const COLOR_THEME_OPTIONS: { value: HeroColorTheme; label: string; description: string }[] = [
+  { value: 'light', label: 'Light', description: 'White/transparent panels' },
+  { value: 'dark', label: 'Dark', description: 'Black/transparent panels' },
+]
+
 interface HeroSlidesClientProps {
   initialSlides: HeroSlide[]
   promotionalCategories: PromotionalCategory[]
@@ -31,6 +36,7 @@ interface HeroSlidesClientProps {
 type FormData = {
   imageUrl: string
   animationType: HeroAnimationType
+  colorTheme: HeroColorTheme
   badgeText: string
   title: string
   subtitle: string
@@ -41,6 +47,7 @@ type FormData = {
 const emptyForm: FormData = {
   imageUrl: '',
   animationType: 'left-panel',
+  colorTheme: 'light',
   badgeText: '',
   title: '',
   subtitle: '',
@@ -96,6 +103,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
     setForm({
       imageUrl: slide.imageUrl,
       animationType: slide.animationType,
+      colorTheme: slide.colorTheme,
       badgeText: slide.badgeText,
       title: slide.title,
       subtitle: slide.subtitle,
@@ -131,6 +139,7 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
         const result = await updateHeroSlideAction(editingSlide.id, {
           imageUrl: form.imageUrl,
           animationType: form.animationType,
+          colorTheme: form.colorTheme,
           badgeText: form.badgeText,
           title: form.title,
           subtitle: form.subtitle,
@@ -344,6 +353,16 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-black-700">
                         {getAnimationLabel(slide.animationType)}
                       </span>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          slide.colorTheme === 'light'
+                            ? 'bg-white border border-gray-300 text-gray-700'
+                            : 'bg-gray-800 text-white'
+                        }`}
+                        title={`Color theme: ${slide.colorTheme}`}
+                      >
+                        {slide.colorTheme === 'light' ? '☀️ Light' : '🌙 Dark'}
+                      </span>
                     </div>
                     {slide.badgeText && (
                       <p className="text-xs text-gray-500 truncate mb-0.5">{slide.badgeText}</p>
@@ -450,6 +469,15 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                       <div className="flex items-center gap-2 mt-1">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-black-700">
                           {getAnimationLabel(slide.animationType)}
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            slide.colorTheme === 'light'
+                              ? 'bg-white border border-gray-300 text-gray-700'
+                              : 'bg-gray-800 text-white'
+                          }`}
+                        >
+                          {slide.colorTheme === 'light' ? '☀️' : '🌙'}
                         </span>
                         {slide.badgeText && (
                           <span className="text-xs text-gray-500 truncate">{slide.badgeText}</span>
@@ -573,6 +601,54 @@ export default function HeroSlidesClient({ initialSlides, promotionalCategories 
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Color Theme */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Panel Color Theme
+                  </label>
+                  <div className="space-y-2">
+                    {COLOR_THEME_OPTIONS.map((opt) => (
+                      <label
+                        key={opt.value}
+                        className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          form.colorTheme === opt.value
+                            ? 'border-black-700 bg-gray-50'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="colorTheme"
+                          value={opt.value}
+                          checked={form.colorTheme === opt.value}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              colorTheme: e.target.value as HeroColorTheme,
+                            }))
+                          }
+                          className="h-4 w-4 text-black-700 focus:ring-black-700"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-sm text-black-700">{opt.label}</div>
+                          <div className="text-xs text-gray-500">{opt.description}</div>
+                        </div>
+                        <div
+                          className={`w-16 h-10 rounded ${
+                            opt.value === 'light'
+                              ? 'bg-gradient-to-br from-white/80 to-transparent border border-gray-300'
+                              : 'bg-gradient-to-br from-black/80 to-transparent border border-gray-600'
+                          }`}
+                          title="Preview"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Choose the panel color based on your background image contrast
+                  </p>
                 </div>
 
                 {/* Title */}
