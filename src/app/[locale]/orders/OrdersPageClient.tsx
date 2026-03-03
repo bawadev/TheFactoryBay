@@ -125,9 +125,9 @@ export default function OrdersPageClient({ orders, count }: OrdersPageClientProp
                           href={`/${locale}/product/${item.product.id}`}
                           className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100"
                         >
-                          {item.variant.images?.[0] ? (
+                          {(item.variant.images?.[0] || item.product.images?.[0]) ? (
                             <Image
-                              src={item.variant.images[0]}
+                              src={item.variant.images?.[0] || item.product.images[0]}
                               alt={item.product.name}
                               fill
                               className="object-cover"

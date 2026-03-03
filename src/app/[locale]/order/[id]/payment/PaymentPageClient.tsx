@@ -242,9 +242,9 @@ export default function PaymentPageClient({ order }: PaymentPageClientProps) {
                 {order.items.map((item) => (
                   <div key={item.id} className="flex gap-3">
                     <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                      {item.variant.images?.[0] ? (
+                      {(item.variant.images?.[0] || item.product.images?.[0]) ? (
                         <Image
-                          src={item.variant.images[0]}
+                          src={item.variant.images?.[0] || item.product.images[0]}
                           alt={item.product.name}
                           fill
                           className="object-cover"

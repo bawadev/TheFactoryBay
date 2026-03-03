@@ -118,7 +118,8 @@ export default function SearchAutocomplete({
           )}
 
           {!isLoading && results.map((product) => {
-            const firstImage = product.variants.find((v) => v.images?.length > 0)?.images?.[0]
+            // Check variant images first, then fall back to product images
+            const firstImage = product.variants.find((v) => v.images?.length > 0)?.images?.[0] || product.images?.[0]
             const discountPercent = Math.round(
               ((product.retailPrice - product.stockPrice) / product.retailPrice) * 100
             )
